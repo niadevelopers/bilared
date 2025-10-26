@@ -10,6 +10,7 @@ import gameRoutes from "./routes/gameRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import cluster from "cluster";
 import os from "os";
+const path = require("path");//added
 
 dotenv.config();
 
@@ -57,6 +58,15 @@ if (cluster.isPrimary) {
   app.use(bodyParser.json());
   app.use(express.urlencoded({ extended: true }));
 
+
+  // Serve all static files (HTML, CSS, JS, images, etc.) from the same directory
+app.use(express.static(__dirname));
+
+// Always serve index.html for any other routes (for SPAs or direct links)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
   /* -----------------------------------
      ✅ 3️⃣  Mount API routes
   ----------------------------------- */
@@ -82,3 +92,4 @@ if (cluster.isPrimary) {
     console.log(`🚀 Worker ${process.pid} running on port ${PORT}`);
   });
 }
+
