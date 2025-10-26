@@ -22,8 +22,8 @@ dotenv.config();
 if (cluster.isPrimary) {
   // 🧩 Master Process — forks one worker per CPU core
   const numCPUs = os.cpus().length;
-  console.log(`⚙️ Master ${process.pid} is running`);
-  console.log(`🚀 Starting ${numCPUs} worker processes...`);
+  //console.log(`⚙️ Master ${process.pid} is running`);
+  //console.log(`🚀 Starting ${numCPUs} worker processes...`);
 
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
@@ -31,7 +31,7 @@ if (cluster.isPrimary) {
 
   // Optional: Restart crashed workers automatically
   cluster.on("exit", (worker, code, signal) => {
-    console.log(`❌ Worker ${worker.process.pid} crashed. Restarting...`);
+    //console.log(`❌ Worker ${worker.process.pid} crashed. Restarting...`);
     cluster.fork();
   });
 } else {
@@ -39,7 +39,7 @@ if (cluster.isPrimary) {
   connectDB();
   const app = express();
 
-  console.log(`🟢 Worker ${process.pid} starting Express server...`);
+ //console.log(`🟢 Worker ${process.pid} starting Express server...`);
 
   /* -----------------------------------
      ✅ 1️⃣  Paystack webhook (must come BEFORE JSON parsers)
@@ -48,7 +48,7 @@ if (cluster.isPrimary) {
     "/api/paystack/webhook",
     express.raw({ type: "*/*" }),
     (req, res, next) => {
-      console.log("📩 Incoming Paystack webhook — raw body captured");
+      //console.log("📩 Incoming Paystack webhook — raw body captured");
       req.rawBody = req.body;
       next();
     },
@@ -85,7 +85,7 @@ if (cluster.isPrimary) {
      ✅ 5️⃣  Root route (for testing backend)
   ----------------------------------- */
   app.get("/api", (req, res) => {
-    console.log(`✅ Root API route hit by worker ${process.pid}`);
+    //console.log(`✅ Root API route hit by worker ${process.pid}`);
     res.send(`Skill Game Backend Running (Worker ${process.pid})`);
   });
 
@@ -94,6 +94,7 @@ if (cluster.isPrimary) {
   ----------------------------------- */
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`🚀 Worker ${process.pid} running on port ${PORT}`);
+    //console.log(`🚀 Worker ${process.pid} running on port ${PORT}`);
   });
 }
+
