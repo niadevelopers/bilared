@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill-Based Casino Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <style>
+  .hidden {
+    display: none !important;
+  }
+
+
+
+</style>
+
+</head>
+<body>
+
+<div id="auth-section">
+  <h2>Login / Register</h2>
+
+  <div class="auth-field">
+    <input id="email" type="email" placeholder="Email" required />
+    <small class="error-msg" id="emailError"></small>
+  </div>
+
+  <div class="auth-field">
+    <input id="password" type="password" placeholder="Password" required />
+    <small class="error-msg" id="passwordError"></small>
+  </div>
+
+  <div class="auth-field">
+    <input id="username" placeholder="Username (for register)" />
+    <small class="error-msg" id="usernameError"></small>
+  </div>
+
+  <div class="auth-buttons">
+    <button id="loginBtn">Login</button>
+    <button id="registerBtn">Register</button>
+  </div>
+
+
+  <div class="disclaimer-notice">
+  <p>
+    ⚠️ Before registering, please
+    <a href="disclaimer.html" target="_blank" style="color:#0056b3; font-weight:600; text-decoration:underline;">
+      read our Skill-Based Game Disclaimer
+    </a>
+    to understand our non-gambling policy.
+  </p>
+</div>
+
+
+  <div class="how-to-play-container">
+    <a href="how-to-play.html" class="how-to-play-link">🎮 How to Play Game</a>
+  </div>
+</div>
+
+
+
+  <div id="game-ui" class="hidden">
+   
+
+
+    <header>
+  <div id="currentPlayers">Current Players:296</div>
+  <div>Available: KES <span id="available">0</span></div>
+
+  <div class="header-actions">
+    <input id="stakeAmount" type="number" min="10" max="100000" placeholder="Enter Stake" />
+    <button id="startGameBtn">Start Game</button>
+    <button id="depositBtn">Deposit</button>
+    <button id="withdrawBtn">Withdraw</button>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+
+   
+
+    <canvas id="arena"></canvas>
+
+    <div id="timerBar"><div id="timerFill"></div></div>
+  </div>
+
+  <div id="withdrawOverlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h3>Withdraw Funds</h3>
+      <input id="wName" placeholder="Full Name" />
+      <input id="wEmail" placeholder="Email" />
+      <input id="wPhone" placeholder="Phone Number" />
+      <button id="submitWithdraw">Submit</button>
+      <button id="closeWithdraw">Cancel</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+  loadWallet();
+});
+
+// Dynamic player count simulation
+const playerCountEl = document.getElementById("currentPlayers");
+function updatePlayerCount() {
+  const randomPlayers = Math.floor(200 + Math.random() * 250);
+  playerCountEl.textContent = `Current Players: ${randomPlayers.toLocaleString()}`;
+}
+setInterval(updatePlayerCount, 15000);
+updatePlayerCount();
+
+  </script>
+</body>
+</html>
