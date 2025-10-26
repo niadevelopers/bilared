@@ -1,4 +1,4 @@
-const API_BASE = "https://bilared.onrender.com:5000/api";
+const API_BASE = "/api";
 let token = localStorage.getItem("token");
 let user = null;
 
@@ -776,5 +776,6 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
 
 
