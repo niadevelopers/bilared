@@ -10,7 +10,7 @@ import gameRoutes from "./routes/gameRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import cluster from "cluster";
 import os from "os";
-const path = require("path");//added
+//const path = require("path");//added
 
 dotenv.config();
 
@@ -92,4 +92,5 @@ app.get("/", (req, res) => {
     console.log(`🚀 Worker ${process.pid} running on port ${PORT}`);
   });
 }
+
 
