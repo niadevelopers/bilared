@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${BASE_URL}/api`;
 let token = localStorage.getItem("token");
 let user = null;
 
@@ -776,3 +776,4 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
