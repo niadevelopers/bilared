@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skill-Based Casino Game</title>
+  <title>Skill-Based Casino</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#e60023">
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <style>
   .hidden {
@@ -97,6 +99,8 @@
   </div>
 
   <script src="script.js"></script>
+  <script src="installPrompt.js"></script>
+  
   <script>
     window.addEventListener("DOMContentLoaded", () => {
   loadWallet();
@@ -114,3 +118,4 @@ updatePlayerCount();
   </script>
 </body>
 </html>
+
