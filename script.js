@@ -326,10 +326,6 @@ depositBtn.onclick = async () => {
   }
 };
 
-
-/* ---------------------------
-   WITHDRAW FUNCTION
----------------------------- */
 /* ---------------------------
    WITHDRAW FUNCTION
 ---------------------------- */
@@ -381,22 +377,21 @@ submitWithdraw.onclick = async () => {
   }
 };
 
+/* ----- FINAL GAME LOGIC (CLEAN + FORCED TIMER) ----- */
 
-
-
-  /* ----- FINAL GAME LOGIC (Hardcoded ball counts by device) ----- */
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
 let hazards = [];
 let sessionId = null;
 let sessionToken = null;
-let timer = 30;
-let totalTime = 30;
 let dragActive = false;
 let touchStart = null;
 let baseSpeed = 1.5;
 let safeZoneRadius = 150;
+let frameHandle = null;
+let timer = 30;
+let totalTime = 30;
 
 /* ----- AUDIO SETUP ----- */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -451,7 +446,7 @@ function playLoseSound() {
   }
 }
 
-/* Utility helpers */
+/* ----- UTILITIES ----- */
 function random(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -459,7 +454,7 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/* Setup game environment */
+/* ----- SETUP GAME ENVIRONMENT ----- */
 function setupGame() {
   arena.width = window.innerWidth;
   arena.height = window.innerHeight - 120;
@@ -468,17 +463,9 @@ function setupGame() {
   player.vx = 0;
   player.vy = 0;
 
-  const isAndroid = /android/i.test(navigator.userAgent);
   const isMobile = /mobile|iphone|ipad|ipod|android/i.test(navigator.userAgent);
-
-  let numHazards, numTokens;
-  if (isAndroid || isMobile) {
-    numHazards = 5;  
-    numTokens = 8;   
-  } else {
-    numHazards = 9;  
-    numTokens = 12;  
-  }
+  const numHazards = isMobile ? 5 : 9;
+  const numTokens = isMobile ? 8 : 12;
 
   tokens = [];
   for (let i = 0; i < numTokens; i++) {
@@ -512,17 +499,12 @@ function setupGame() {
       glowPhase: 0,
     });
   }
-
-  console.log(
-    `Device: ${isAndroid || isMobile ? "Android" : "Desktop"} | Red Balls: ${numHazards} | Green Balls: ${numTokens}`
-  );
 }
 
-/* Draw all game elements */
+/* ----- DRAW EVERYTHING ----- */
 function draw() {
   ctx.clearRect(0, 0, arena.width, arena.height);
 
-  // Tokens
   ctx.fillStyle = "lime";
   tokens.forEach((t) => {
     if (!t.collected) {
@@ -532,7 +514,6 @@ function draw() {
     }
   });
 
-  // Hazards
   hazards.forEach((h) => {
     if (h.chase) {
       h.glowPhase += 0.1;
@@ -548,14 +529,13 @@ function draw() {
     ctx.shadowBlur = 0;
   });
 
-  // Player
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 }
 
-/* Update movement, collisions, and logic */
+/* ----- UPDATE LOGIC ----- */
 function update() {
   if (!dragActive) {
     player.vx *= 0.92;
@@ -600,7 +580,6 @@ function update() {
     if (h.y < h.r || h.y > arena.height - h.r) h.dy *= -1;
   });
 
-  // Token collection
   tokens.forEach((t) => {
     if (!t.collected && distance(player, t) < player.r + t.r) {
       t.collected = true;
@@ -608,7 +587,6 @@ function update() {
     }
   });
 
-  // Hazard collision
   hazards.forEach((h) => {
     if (distance(player, h) < player.r + h.r) {
       playHazardSound();
@@ -616,14 +594,13 @@ function update() {
     }
   });
 
-  // Win condition
   if (tokens.every((t) => t.collected)) {
     playWinSound();
     endGame("win");
   }
 }
 
-/* Countdown before game begins */
+/* ----- COUNTDOWN ----- */
 function showCountdown(seconds, callback) {
   const overlay = document.createElement("div");
   Object.assign(overlay.style, {
@@ -655,7 +632,7 @@ function showCountdown(seconds, callback) {
   }, 1000);
 }
 
-/* Custom game alert (non-blocking) */
+/* ----- CUSTOM ALERT ----- */
 function showGameAlert(message, callback) {
   const modal = document.createElement("div");
   Object.assign(modal.style, {
@@ -682,19 +659,45 @@ function showGameAlert(message, callback) {
   };
 }
 
-/* Start game */
+/* ----- TIMER (PURE JS CONTROL) ----- */
+const timerFill = document.getElementById("timerFill");
+
+function resetTimer() {
+  cancelAnimationFrame(frameHandle);
+  timer = totalTime;
+  if (timerFill) {
+    timerFill.style.transition = "none";
+    timerFill.style.width = "100%";
+  }
+}
+
+function startTimer() {
+  resetTimer();
+  tickTimer();
+}
+
+function tickTimer() {
+  if (!gameRunning) return;
+  timer -= 1 / 60;
+  if (timer <= 0) {
+    timer = 0;
+    if (timerFill) timerFill.style.width = "0%";
+    playLoseSound();
+    endGame("lose");
+    return;
+  }
+  if (timerFill) timerFill.style.width = `${(timer / totalTime) * 100}%`;
+  frameHandle = requestAnimationFrame(tickTimer);
+}
+
+/* ----- START GAME ----- */
 async function startGame() {
   if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
     return alert("Invalid stake");
 
-  // force-reset timer bar immediately — no CSS, no delay
-  if (timerFill) {
-    timerFill.style.width = "100%";
-  }
-  timer = 30;
-  totalTime = 30;
+  resetTimer();
 
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
@@ -713,33 +716,24 @@ async function startGame() {
       setupGame();
 
       showCountdown(5, () => {
-        // ensure bar is full again just before running
-        if (timerFill) timerFill.style.width = "100%";
-
-        timer = totalTime = 30;
+        resetTimer();
         gameRunning = true;
         requestAnimationFrame(gameLoop);
+        startTimer();
       });
-    } else {
-      alert(data.message || "Could not start session");
-    }
+    } else alert(data.message || "Could not start session");
   } catch (err) {
     console.error(err);
     alert("Start game error");
   }
 }
 
-/* End game */
+/* ----- END GAME ----- */
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
-
-  // stop loop completely
-  if (typeof animationFrame !== "undefined") cancelAnimationFrame(animationFrame);
-
-  // brutally fill timer instantly
-  timer = totalTime;
-  if (timerFill) timerFill.style.width = "100%";
+  cancelAnimationFrame(frameHandle);
+  resetTimer();
 
   try {
     await fetch(`${API_BASE}/game/result`, {
@@ -750,7 +744,6 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
-
     alert(result === "win" ? "You won!" : "You lost!");
     loadWallet();
   } catch (err) {
@@ -758,65 +751,13 @@ async function endGame(result) {
     alert("Error submitting game result.");
   }
 }
-/* === FINAL FORCEFUL TIMER CONTROL === */
 
-let timerBar = document.getElementById("timerFill");
-let timerRunning = false;
-let frameHandle = null;
-let timer = 0;
-const totalTime = 30; // seconds per round
-
-// make sure CSS can't sneak in transitions
-timerBar.style.transition = "none";
-timerBar.style.width = "100%";
-
-function hardResetTimer() {
-  // kill any leftover animation
-  cancelAnimationFrame(frameHandle);
-  frameHandle = null;
-  timerRunning = false;
-  timer = totalTime;
-
-  // forcefully set width full — instant, no refill
-  timerBar.style.transition = "none";
-  timerBar.style.width = "100%";
-  void timerBar.offsetWidth; // flush layout to apply instantly
+/* ----- GAME LOOP ----- */
+function gameLoop() {
+  if (!gameRunning) return;
+  draw();
+  update();
+  frameHandle = requestAnimationFrame(gameLoop);
 }
 
-function startHardTimer() {
-  hardResetTimer(); // ensure full before countdown starts
-  timerRunning = true;
-  tickHardTimer();
-}
-
-function tickHardTimer() {
-  if (!timerRunning) return;
-  timer -= 1 / 60;
-
-  if (timer <= 0) {
-    timer = 0;
-    timerBar.style.width = "0%";
-    timerRunning = false;
-    endGame("lose");
-    return;
-  }
-
-  timerBar.style.width = `${(timer / totalTime) * 100}%`;
-  frameHandle = requestAnimationFrame(tickHardTimer);
-}
-
-/* hook into your start/end functions */
-const _origStartGame = startGame;
-startGame = function() {
-  hardResetTimer(); // fully fill bar before next round
-  _origStartGame(); // run your original logic
-  startHardTimer(); // now begin the countdown
-};
-
-const _origEndGame = endGame;
-endGame = function(result) {
-  timerRunning = false;
-  cancelAnimationFrame(frameHandle);
-  hardResetTimer(); // fill bar instantly on round end
-  _origEndGame(result);
-};
+startGameBtn.onclick = startGame;
