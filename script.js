@@ -659,9 +659,6 @@ function showGameAlert(message, callback) {
   };
 }
 
-/* ----- TIMER (PURE JS CONTROL) ----- */
-const timerFill = document.getElementById("timerFill");
-
 function resetTimer() {
   cancelAnimationFrame(frameHandle);
   timer = totalTime;
@@ -761,3 +758,4 @@ function gameLoop() {
 }
 
 startGameBtn.onclick = startGame;
+
