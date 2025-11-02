@@ -12,7 +12,7 @@
   <div id="list"></div>
 
 <script>
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "/api";
 document.getElementById("btnLoad").onclick = async () => {
   const token = document.getElementById("adminToken").value.trim();
   if (!token) return alert("Paste admin token");
@@ -72,3 +72,4 @@ document.getElementById("btnLoad").onclick = async () => {
 </script>
 </body>
 </html>
+
