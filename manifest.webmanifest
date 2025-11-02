@@ -1,0 +1,21 @@
+{
+  "name": "BilaRed",
+  "short_name": "BR",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e60023",
+  "description": "BilaRed – Play, Earn, and Experience Seamless Gaming!",
+  "icons": [
+    {
+      "src": "images/cat.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/cat-blue.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
