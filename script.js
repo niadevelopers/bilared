@@ -623,20 +623,6 @@ function update() {
   }
 }
 
-/* Game loop */
-function gameLoop() {
-  if (!gameRunning) return;
-  draw();
-  update();
-  timer -= 1 / 60;
-  timerFill.style.width = `${(timer / totalTime) * 100}%`;
-  if (timer <= 0) {
-    playLoseSound();
-    endGame("lose");
-  }
-  requestAnimationFrame(gameLoop);
-}
-
 /* Countdown before game begins */
 function showCountdown(seconds, callback) {
   const overlay = document.createElement("div");
@@ -696,6 +682,31 @@ function showGameAlert(message, callback) {
   };
 }
 
+/* Game loop */
+function gameLoop() {
+  if (!gameRunning) return;
+
+  draw();
+  update();
+
+  // timer countdown
+  timer -= 1 / 60;
+  if (timer < 0) timer = 0;
+
+  // update the bar width
+  timerFill.style.width = `${(timer / totalTime) * 100}%`;
+
+  // check time-out
+  if (timer <= 0) {
+    playLoseSound();
+    cancelAnimationFrame(animationFrame); // stop any leftover frame
+    endGame("lose");
+    return;
+  }
+
+  animationFrame = requestAnimationFrame(gameLoop);
+}
+
 /* Start game */
 async function startGame() {
   if (!token) return alert("Please login first.");
@@ -703,13 +714,13 @@ async function startGame() {
   if (isNaN(stake) || stake < 10 || stake > 100000)
     return alert("Invalid stake");
 
-  // 🔥 Force the time bar to refill fully right when the round starts
-  timer = totalTime || 30;
+  // 🔥 Instantly fill the timer bar for a fresh round
+  totalTime = 30;
+  timer = totalTime;
   timerFill.style.transition = "none";
   timerFill.style.width = "100%";
-  setTimeout(() => {
-    timerFill.style.transition = "";
-  }, 60);
+  // small async flush to ensure the DOM updates before countdown
+  setTimeout(() => (timerFill.style.transition = ""), 60);
 
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
@@ -721,15 +732,16 @@ async function startGame() {
       body: JSON.stringify({ stake }),
     });
     const data = await res.json();
+
     if (data.sessionId) {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
+
       showCountdown(5, () => {
-        timer = 30;
-        totalTime = 30;
+        timer = totalTime;
         gameRunning = true;
-        gameLoop();
+        animationFrame = requestAnimationFrame(gameLoop);
       });
     } else alert(data.message || "Could not start session");
   } catch (err) {
@@ -742,6 +754,13 @@ async function startGame() {
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
+
+  // force visual timer bar reset at the end too (for clarity)
+  timer = totalTime;
+  timerFill.style.transition = "none";
+  timerFill.style.width = "100%";
+  setTimeout(() => (timerFill.style.transition = ""), 60);
+
   try {
     await fetch(`${API_BASE}/game/result`, {
       method: "POST",
@@ -751,6 +770,7 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
+
     alert(result === "win" ? "You won!" : "You lost!");
     loadWallet();
   } catch (err) {
@@ -758,5 +778,3 @@ async function endGame(result) {
     alert("Error submitting game result.");
   }
 }
-
-startGameBtn.onclick = startGame;
