@@ -682,45 +682,105 @@ function showGameAlert(message, callback) {
   };
 }
 
-/* Game loop */
+// --- Globals required for forced control ---
+let animationFrame = null;
+let timerLocked = false; // when true, the timer won't decrement
+
+function ensureTimerFill() {
+  if (typeof timerFill === "undefined" || !timerFill) {
+    // try common selectors — adjust if your element has different selector
+    timerFill = document.getElementById("timerFill") || document.querySelector(".timer-fill") || timerFill;
+  }
+}
+
+// Force-set the timer bar to full instantly with no animation, and force repaint
+function forceFillTimerInstant() {
+  ensureTimerFill();
+  totalTime = totalTime || 30;
+  timer = totalTime;
+
+  if (!timerFill) return; // nothing to do if DOM element not found
+
+  // Aggressively remove any transitions then set width to 100%
+  timerFill.style.transition = "none";
+  timerFill.style.webkitTransition = "none";
+  timerFill.style.width = "100%";
+
+  // Force paint to ensure browser applied the style immediately
+  // eslint-disable-next-line no-unused-expressions
+  void timerFill.offsetWidth;
+}
+
+// Update timer visual from current timer value WITHOUT any transition (instant)
+function updateTimerVisualInstant() {
+  ensureTimerFill();
+  if (!timerFill) return;
+  timerFill.style.transition = "none";
+  timerFill.style.width = `${Math.max(0, (timer / totalTime) * 100)}%`;
+}
+
+// Update timer visual normally (used while running so width changes reflect state)
+// this restores transitions if you want them — but it's safe to keep them off
+function updateTimerVisual() {
+  ensureTimerFill();
+  if (!timerFill) return;
+  // If you prefer no visual smoothness, leave transition as none.
+  // To allow smooth depletion, set a short linear transition; comment out if you want instant visual change.
+  // timerFill.style.transition = "width 0.12s linear";
+  timerFill.style.width = `${Math.max(0, (timer / totalTime) * 100)}%`;
+}
+
+/* --- Forced / safe Game loop --- */
 function gameLoop() {
   if (!gameRunning) return;
 
   draw();
   update();
 
-  // timer countdown
-  timer -= 1 / 60;
-  if (timer < 0) timer = 0;
+  // Only decrement when unlocked
+  if (!timerLocked) {
+    timer -= 1 / 60;
+    if (timer < 0) timer = 0;
+  }
 
-  // update the bar width
-  timerFill.style.width = `${(timer / totalTime) * 100}%`;
+  // Update visual (no transition override here unless you want smoothness)
+  updateTimerVisual();
 
-  // check time-out
   if (timer <= 0) {
+    // Stop frames immediately so no overwrite happens afterward
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+    // Ensure timer is visually 0
+    updateTimerVisualInstant();
     playLoseSound();
-    cancelAnimationFrame(animationFrame); // stop any leftover frame
+    gameRunning = false; // stop any further update cycles
+    // call endGame after we've forced visual state
     endGame("lose");
     return;
   }
 
+  // queue next frame
   animationFrame = requestAnimationFrame(gameLoop);
 }
 
-/* Start game */
+/* --- Start game: force the bar full immediately on click/start --- */
 async function startGame() {
+  // force-fill the timer immediately; this runs before any network or countdown
+  forceFillTimerInstant();
+  // cancel any queued frames from previous session to stop overwrites
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+  // unlock the timer so it can start decrementing when the round begins
+  timerLocked = false;
+
   if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
     return alert("Invalid stake");
-
-  // 🔥 Instantly fill the timer bar for a fresh round
-  totalTime = 30;
-  timer = totalTime;
-  timerFill.style.transition = "none";
-  timerFill.style.width = "100%";
-  // small async flush to ensure the DOM updates before countdown
-  setTimeout(() => (timerFill.style.transition = ""), 60);
 
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
@@ -738,43 +798,74 @@ async function startGame() {
       sessionToken = data.sessionToken;
       setupGame();
 
+      // Make sure timer vars are set for the round
+      totalTime = 30;
+      timer = totalTime;
+
+      // If you show countdown, keep it; the timer bar is already full.
       showCountdown(5, () => {
-        timer = totalTime;
+        // ensure any leftover frames are cleared, then start loop
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+        // unlock timer counting now that round starts
+        timerLocked = false;
         gameRunning = true;
+        // immediate visual sync (no transition), then begin loop which uses normal updateTimerVisual
+        updateTimerVisualInstant();
         animationFrame = requestAnimationFrame(gameLoop);
       });
-    } else alert(data.message || "Could not start session");
+    } else {
+      alert(data.message || "Could not start session");
+    }
   } catch (err) {
     console.error(err);
     alert("Start game error");
   }
 }
 
-/* End game */
+/* --- End game: force the bar full first, then proceed with result submission and messages --- */
 async function endGame(result) {
-  if (!gameRunning) return;
+  // If game already stopped, still force the fill (we want independence between rounds)
+  // cancel any future frames first
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+
+  // Immediately force the bar to full and lock timer so it doesn't decrement
+  forceFillTimerInstant();
+  timerLocked = true;
   gameRunning = false;
 
-  // force visual timer bar reset at the end too (for clarity)
-  timer = totalTime;
-  timerFill.style.transition = "none";
-  timerFill.style.width = "100%";
-  setTimeout(() => (timerFill.style.transition = ""), 60);
-
+  // Proceed with result submission but DO NOT let any async or alerts overwrite the immediate visual state
   try {
-    await fetch(`${API_BASE}/game/result`, {
+    // fire-and-forget: attempt to submit result but even if it stalls, bar remains full
+    fetch(`${API_BASE}/game/result`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ sessionId, result }),
-    });
+    }).catch((err) => console.error("Result submit failed:", err));
 
+    // Use native alert or your custom modal — visual is already full and locked
     alert(result === "win" ? "You won!" : "You lost!");
+    // After user sees message, reload wallet; but do NOT change timer visuals here
     loadWallet();
   } catch (err) {
     console.error(err);
-    alert("Error submitting game result.");
+    try { alert("Error submitting game result."); } catch (e) {}
+  } finally {
+    // Keep the bar full and locked until the player explicitly clicks Start (startGame unlocks)
+    timerLocked = true;
+    // No extra changes here so next 'startGame' action is authoritative.
   }
+}
+
+// ensure start button hooked (if not already)
+if (typeof startGameBtn !== "undefined" && startGameBtn) {
+  startGameBtn.onclick = startGame;
 }
