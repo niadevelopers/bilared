@@ -381,7 +381,8 @@ submitWithdraw.onclick = async () => {
   }
 };
 
-/* ----- FINAL GAME LOGIC (Hardcoded ball counts by device) ----- */
+
+/* ----- GAME LOGIC----- */ 
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
