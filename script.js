@@ -736,15 +736,22 @@ async function startGame() {
 }
 
 /* End game */
+/* End game */
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
+
+  // 🔥 Force timer bar reset immediately — first thing before anything else
   timer = totalTime;
   timerFill.style.transition = "none";
   timerFill.style.width = "100%";
-  setTimeout(() => (timerFill.style.transition = ""), 50);
+  // tiny delay to re-enable transition cleanly
+  setTimeout(() => {
+    timerFill.style.transition = "";
+  }, 60);
 
   try {
+    // continue with server update
     await fetch(`${API_BASE}/game/result`, {
       method: "POST",
       headers: {
@@ -754,16 +761,16 @@ async function endGame(result) {
       body: JSON.stringify({ sessionId, result }),
     });
 
-    // Use non-blocking alert and reset timer smoothly
-    showGameAlert(result === "win" ? "You won!" : "You lost!", () => {
-      timer = totalTime;
-      timerFill.style.width = "100%";
-      loadWallet();
-    });
+    // normal flow after refill has already occurred
+    alert(result === "win" ? "You won the game!" : "You lost the game!");
+    loadWallet();
+
   } catch (err) {
     console.error(err);
-    showGameAlert("Error submitting game result.");
+    alert("Error submitting game result.");
   }
 }
 
+
 startGameBtn.onclick = startGame;
+
