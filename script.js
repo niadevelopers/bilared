@@ -305,7 +305,7 @@ depositBtn.onclick = async () => {
 
     // Initialize Paystack
     const handler = PaystackPop.setup({
-      key: "pk_test_2b2ffe1c8b8f4b0da991dd13fc418bdf86dbed06",
+      key: "pk_live_8b79c89f1bc7cd80a6b24d0d18bd580f49e9c646",
       email: payerEmail,
       amount: Math.round(amount * 100), // Convert to kobo
       currency: "KES",
@@ -777,3 +777,4 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
