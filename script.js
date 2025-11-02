@@ -744,17 +744,14 @@ async function startGame() {
       sessionToken = data.sessionToken;
       setupGame();
 
-      // Countdown before the round begins
+      // Countdown before round begins
       showCountdown(5, () => {
-        // Ensure round time is set
+        // Full timer before countdown depletion starts
         timer = totalTime = 30;
-
-        // Make sure the visual timer is full at the start of the round
-        // (transition disabled briefly so it doesn't animate filling)
         timerFill.style.transition = "none";
         timerFill.style.width = "100%";
 
-        // Re-enable transition on next frame so depletion animates smoothly
+        // Force browser to repaint, then enable depletion
         requestAnimationFrame(() => {
           timerFill.style.transition = "";
           gameRunning = true;
@@ -784,27 +781,27 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
+  } catch (err) {
+    console.error("Result submission failed:", err);
+  }
 
-    // Synchronous browser alert — execution pauses here until user clicks "OK"
-    alert(result === "win" ? "You won!" : "You lost!");
+  // Always show the alert to user
+  alert(result === "win" ? "You won!" : "You lost!");
+  loadWallet();
 
-    // After user clicks OK, refresh wallet info
-    loadWallet();
-
-    // === NOW refill timer visually when user dismisses the alert ===
-    // This forces the bar to be full at the exact moment the user indicates readiness.
-    timer = totalTime; // keep whatever totalTime you have (usually 30)
+  // === FORCE TIMER BAR REFILL IMMEDIATELY AFTER ALERT ===
+  timer = totalTime = 30;
+  if (timerFill) {
+    // Remove any transition and force full bar instantly
     timerFill.style.transition = "none";
     timerFill.style.width = "100%";
-    // small timeout to re-enable transition so next depletion animates normally
-    setTimeout(() => {
-      timerFill.style.transition = "";
-    }, 50);
-
-  } catch (err) {
-    console.error(err);
-    alert("Error submitting game result.");
+    // Force repaint so style applies now
+    void timerFill.offsetWidth;
+    // Re-enable transition so next round can deplete smoothly
+    timerFill.style.transition = "";
   }
+
+  console.log("Timer forcibly refilled after round end.");
 }
 
 startGameBtn.onclick = startGame;
