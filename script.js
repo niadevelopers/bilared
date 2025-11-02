@@ -236,7 +236,7 @@ submitWithdraw.onclick = async () => {
 };
 
 /* ---------------------------
-   GAME LOGIC
+   FINAL GAME LOGIC
 ---------------------------- */
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
@@ -248,6 +248,7 @@ let frameHandle = null;
 let timer = 30;
 let totalTime = 30;
 let lastFrameTime = null;
+let timerFill = null;
 
 /* ----- AUDIO ----- */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -269,6 +270,23 @@ const playLoseSound = () => playTone("sine", 150, 0.4);
 /* ----- UTILITIES ----- */
 function random(min, max) { return Math.random() * (max - min) + min; }
 function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+/* ----- TIMER CREATION ----- */
+function createTimerBar() {
+  const bar = document.getElementById("timerBar");
+  if (!bar) return null;
+  bar.innerHTML = ""; // clear any old fill
+
+  const fill = document.createElement("div");
+  fill.id = "timerFill";
+  fill.style.height = "100%";
+  fill.style.width = "100%";
+  fill.style.background = "linear-gradient(to right, #ffcc00, #ff5500)";
+  fill.style.boxShadow = "0 0 8px #ffcc00";
+  fill.style.transition = "none"; // no CSS animation
+  bar.appendChild(fill);
+  return fill;
+}
 
 /* ----- GAME SETUP ----- */
 function setupGame() {
@@ -326,7 +344,7 @@ function update() {
   if (tokens.every((t) => t.collected)) { playWinSound(); endGame("win"); }
 }
 
-/* ----- TIMER LOGIC (new) ----- */
+/* ----- TIMER LOGIC ----- */
 function resetTimer() {
   cancelAnimationFrame(frameHandle);
   timer = totalTime;
@@ -359,7 +377,11 @@ async function startGame() {
   if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000) return alert("Invalid stake.");
+
+  // recreate the timer bar fresh
+  timerFill = createTimerBar();
   resetTimer();
+
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
       method: "POST",
@@ -367,16 +389,18 @@ async function startGame() {
       body: JSON.stringify({ stake }),
     });
     const data = await res.json();
-    if (!data.sessionId) return alert(data.message || "Could not start.");
+    if (!data.sessionId) return alert(data.message || "Could not start session.");
     sessionId = data.sessionId;
     sessionToken = data.sessionToken;
     setupGame();
     showCountdown(5, () => {
       gameRunning = true;
+      timer = totalTime = 30;
       requestAnimationFrame(gameLoop);
       requestAnimationFrame(updateTimer);
     });
-  } catch {
+  } catch (err) {
+    console.error(err);
     alert("Start game error.");
   }
 }
