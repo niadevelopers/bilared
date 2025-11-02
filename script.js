@@ -744,15 +744,17 @@ async function startGame() {
       sessionToken = data.sessionToken;
       setupGame();
 
-      // Start countdown before the game
+      // Countdown before the round begins
       showCountdown(5, () => {
+        // Ensure round time is set
         timer = totalTime = 30;
 
-        // Reset timer bar to full immediately before starting countdown depletion
+        // Make sure the visual timer is full at the start of the round
+        // (transition disabled briefly so it doesn't animate filling)
         timerFill.style.transition = "none";
         timerFill.style.width = "100%";
 
-        // Allow a frame so transition re-enables smoothly
+        // Re-enable transition on next frame so depletion animates smoothly
         requestAnimationFrame(() => {
           timerFill.style.transition = "";
           gameRunning = true;
@@ -773,12 +775,6 @@ async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
 
-  // Immediately reset timer bar visually to full when the round ends
-  timer = totalTime;
-  timerFill.style.transition = "none";
-  timerFill.style.width = "100%";
-  setTimeout(() => (timerFill.style.transition = ""), 50);
-
   try {
     await fetch(`${API_BASE}/game/result`, {
       method: "POST",
@@ -789,8 +785,22 @@ async function endGame(result) {
       body: JSON.stringify({ sessionId, result }),
     });
 
+    // Synchronous browser alert — execution pauses here until user clicks "OK"
     alert(result === "win" ? "You won!" : "You lost!");
+
+    // After user clicks OK, refresh wallet info
     loadWallet();
+
+    // === NOW refill timer visually when user dismisses the alert ===
+    // This forces the bar to be full at the exact moment the user indicates readiness.
+    timer = totalTime; // keep whatever totalTime you have (usually 30)
+    timerFill.style.transition = "none";
+    timerFill.style.width = "100%";
+    // small timeout to re-enable transition so next depletion animates normally
+    setTimeout(() => {
+      timerFill.style.transition = "";
+    }, 50);
+
   } catch (err) {
     console.error(err);
     alert("Error submitting game result.");
