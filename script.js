@@ -758,77 +758,65 @@ async function endGame(result) {
     alert("Error submitting game result.");
   }
 }
-/* ==== PURE JS TIMER OVERRIDE ==== */
+/* === FINAL FORCEFUL TIMER CONTROL === */
 
-// kill any older timer logic
-if (window.timerInterval) clearInterval(window.timerInterval);
-if (window.animationFrame) cancelAnimationFrame(window.animationFrame);
-
-// constants
-const ROUND_TIME = 30; // seconds per round
-let timeLeft = ROUND_TIME;
+let timerBar = document.getElementById("timerFill");
 let timerRunning = false;
 let frameHandle = null;
+let timer = 0;
+const totalTime = 30; // seconds per round
 
-// ensure DOM element
-let timerBar = document.getElementById("timerFill");
-if (!timerBar) {
-  timerBar = document.createElement("div");
-  timerBar.id = "timerFill";
-  Object.assign(timerBar.style, {
-    position: "absolute",
-    top: "0",
-    left: "0",
-    height: "6px",
-    background: "lime",
-    width: "100%"
-  });
-  document.body.appendChild(timerBar);
-}
+// make sure CSS can't sneak in transitions
+timerBar.style.transition = "none";
+timerBar.style.width = "100%";
 
-// force reset to full width instantly
-function resetTimerInstant() {
-  timeLeft = ROUND_TIME;
+function hardResetTimer() {
+  // kill any leftover animation
+  cancelAnimationFrame(frameHandle);
+  frameHandle = null;
   timerRunning = false;
-  if (frameHandle) cancelAnimationFrame(frameHandle);
+  timer = totalTime;
+
+  // forcefully set width full — instant, no refill
+  timerBar.style.transition = "none";
   timerBar.style.width = "100%";
+  void timerBar.offsetWidth; // flush layout to apply instantly
 }
 
-// update logic — called every frame while running
-function tickTimer() {
+function startHardTimer() {
+  hardResetTimer(); // ensure full before countdown starts
+  timerRunning = true;
+  tickHardTimer();
+}
+
+function tickHardTimer() {
   if (!timerRunning) return;
-  timeLeft -= 1 / 60;
-  if (timeLeft <= 0) {
-    timeLeft = 0;
+  timer -= 1 / 60;
+
+  if (timer <= 0) {
+    timer = 0;
     timerBar.style.width = "0%";
     timerRunning = false;
-    cancelAnimationFrame(frameHandle);
     endGame("lose");
     return;
   }
-  const pct = (timeLeft / ROUND_TIME) * 100;
-  timerBar.style.width = pct + "%";
-  frameHandle = requestAnimationFrame(tickTimer);
+
+  timerBar.style.width = `${(timer / totalTime) * 100}%`;
+  frameHandle = requestAnimationFrame(tickHardTimer);
 }
 
-// start timer from full to empty
-function startTimer() {
-  resetTimerInstant();
-  timerRunning = true;
-  frameHandle = requestAnimationFrame(tickTimer);
-}
-
-/* hook these into your existing game flow */
-const _originalStartGame = startGame;
-startGame = async function() {
-  resetTimerInstant(); // always full before a new round
-  await _originalStartGame(); // call the original start logic
-  startTimer(); // now drain down cleanly
+/* hook into your start/end functions */
+const _origStartGame = startGame;
+startGame = function() {
+  hardResetTimer(); // fully fill bar before next round
+  _origStartGame(); // run your original logic
+  startHardTimer(); // now begin the countdown
 };
 
-const _originalEndGame = endGame;
-endGame = async function(result) {
-  resetTimerInstant(); // snap full when round ends
-  await _originalEndGame(result);
+const _origEndGame = endGame;
+endGame = function(result) {
+  timerRunning = false;
+  cancelAnimationFrame(frameHandle);
+  hardResetTimer(); // fill bar instantly on round end
+  _origEndGame(result);
 };
-
