@@ -776,4 +776,3 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
-
