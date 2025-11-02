@@ -14,10 +14,7 @@ const authSection = document.getElementById("auth-section");
 const gameUI = document.getElementById("game-ui");
 const arena = document.getElementById("arena");
 const ctx = arena.getContext("2d");
-
-// NOTE: We will create timerFill dynamically each round.
-// Keep reference variable here but DO NOT rely on existing DOM element.
-let timerFill = null;
+const timerFill = document.getElementById("timerFill");
 
 const balanceEl = document.getElementById("balance");
 const availableEl = document.getElementById("available");
@@ -41,14 +38,13 @@ if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
 // Utility: sanitize input (remove potential XSS and spaces)
 function sanitizeInput(value) {
   return value
-    .replace(/<[^>]*>?/gm, "") // remove HTML tags
-    .replace(/[{}<>;$]/g, "") // remove code-like chars
+    .replace(/<[^>]*>?/gm, "")  // remove HTML tags
+    .replace(/[{}<>;$]/g, "")   // remove code-like chars
     .trim();
 }
 
 // Utility: show error messages dynamically
 function showError(input, message) {
-  if (!input) return;
   let errorEl = input.nextElementSibling;
   if (!errorEl || !errorEl.classList.contains("error-msg")) {
     errorEl = document.createElement("small");
@@ -67,25 +63,30 @@ function clearErrors() {
 }
 
 // Validation helper functions
-function validateEmail(emailVal) {
+function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailVal) return "Email is required.";
-  if (!emailRegex.test(emailVal)) return "Please enter a valid email address.";
+  if (!email) return "Email is required.";
+  if (!emailRegex.test(email)) return "Please enter a valid email address.";
   return "";
 }
 
-function validatePassword(passwordVal) {
-  if (!passwordVal) return "Password is required.";
-  if (passwordVal.length < 6) return "Password must be at least 6 characters long.";
-  if (!/[A-Z]/.test(passwordVal)) return "Password must contain at least one uppercase letter.";
-  if (!/[0-9]/.test(passwordVal)) return "Password must contain at least one number.";
+function validatePassword(password) {
+  if (!password) return "Password is required.";
+  if (password.length < 6)
+    return "Password must be at least 6 characters long.";
+  if (!/[A-Z]/.test(password))
+    return "Password must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(password))
+    return "Password must contain at least one number.";
   return "";
 }
 
-function validateUsername(usernameVal) {
-  if (!usernameVal) return "Username is required.";
-  if (usernameVal.length < 3) return "Username must be at least 3 characters long.";
-  if (!/^[a-zA-Z0-9_]+$/.test(usernameVal)) return "Username can only contain letters, numbers, and underscores.";
+function validateUsername(username) {
+  if (!username) return "Username is required.";
+  if (username.length < 3)
+    return "Username must be at least 3 characters long.";
+  if (!/^[a-zA-Z0-9_]+$/.test(username))
+    return "Username can only contain letters, numbers, and underscores.";
   return "";
 }
 
@@ -95,18 +96,19 @@ function validateUsername(usernameVal) {
 async function login() {
   clearErrors();
 
-  const emailVal = sanitizeInput(email ? email.value : "");
-  const passwordVal = sanitizeInput(password ? password.value : "");
+  const emailVal = sanitizeInput(email.value);
+  const passwordVal = sanitizeInput(password.value);
 
+  // Validation checks
   const emailMsg = validateEmail(emailVal);
   const passwordMsg = validatePassword(passwordVal);
 
   if (emailMsg) {
-    if (email) showError(email, emailMsg);
+    showError(email, emailMsg);
     return alert(emailMsg);
   }
   if (passwordMsg) {
-    if (password) showError(password, passwordMsg);
+    showError(password, passwordMsg);
     return alert(passwordMsg);
   }
 
@@ -122,8 +124,8 @@ async function login() {
       token = data.token;
       localStorage.setItem("token", token);
       user = data.user || null;
-      if (authSection) authSection.classList.add("hidden");
-      if (gameUI) gameUI.classList.remove("hidden");
+      authSection.classList.add("hidden");
+      gameUI.classList.remove("hidden");
       await loadWallet();
     } else {
       alert(data.message || "Login failed");
@@ -140,24 +142,25 @@ async function login() {
 async function register() {
   clearErrors();
 
-  const usernameVal = sanitizeInput(username ? username.value : "");
-  const emailVal = sanitizeInput(email ? email.value : "");
-  const passwordVal = sanitizeInput(password ? password.value : "");
+  const usernameVal = sanitizeInput(username.value);
+  const emailVal = sanitizeInput(email.value);
+  const passwordVal = sanitizeInput(password.value);
 
+  // Validation checks
   const usernameMsg = validateUsername(usernameVal);
   const emailMsg = validateEmail(emailVal);
   const passwordMsg = validatePassword(passwordVal);
 
   if (usernameMsg) {
-    if (username) showError(username, usernameMsg);
+    showError(username, usernameMsg);
     return alert(usernameMsg);
   }
   if (emailMsg) {
-    if (email) showError(email, emailMsg);
+    showError(email, emailMsg);
     return alert(emailMsg);
   }
   if (passwordMsg) {
-    if (password) showError(password, passwordMsg);
+    showError(password, passwordMsg);
     return alert(passwordMsg);
   }
 
@@ -187,31 +190,30 @@ async function register() {
 // ============================
 // EVENT LISTENERS
 // ============================
-if (loginBtn) loginBtn.onclick = login;
-if (registerBtn) registerBtn.onclick = register;
+loginBtn.onclick = login;
+registerBtn.onclick = register;
 
-if (logoutBtn) {
-  logoutBtn.onclick = () => {
-    localStorage.clear();
-    token = null;
-    user = null;
-    if (authSection) authSection.classList.remove("hidden");
-    if (gameUI) gameUI.classList.add("hidden");
-    if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
-  };
-}
+
+logoutBtn.onclick = () => {
+  localStorage.clear();
+  token = null;
+  user = null;
+  authSection.classList.remove("hidden");
+  gameUI.classList.add("hidden");
+  if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
+};
 
 /* ---------------------------
    INITIAL PAGE LOGIC
 ---------------------------- */
 window.addEventListener("DOMContentLoaded", () => {
   if (!token) {
-    if (authSection) authSection.classList.remove("hidden");
-    if (gameUI) gameUI.classList.add("hidden");
+    authSection.classList.remove("hidden");
+    gameUI.classList.add("hidden");
     if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
   } else {
-    if (authSection) authSection.classList.add("hidden");
-    if (gameUI) gameUI.classList.remove("hidden");
+    authSection.classList.add("hidden");
+    gameUI.classList.remove("hidden");
     loadWallet();
   }
 });
@@ -232,22 +234,33 @@ async function loadWallet() {
     }
 
     const data = await res.json();
+    
+    // Grab elements if they exist
+    const balanceEl = document.getElementById("balance");
+    const availableEl = document.getElementById("available");
+    const lockedEl = document.getElementById("locked");
 
+    // Display available balance always
     if (availableEl) availableEl.textContent = Number(data.available || 0).toFixed(2);
+
+    // Optional: display balance and locked only if elements exist
     if (balanceEl) balanceEl.textContent = Number(data.balance || 0).toFixed(2);
     if (lockedEl) lockedEl.textContent = Number(data.locked || 0).toFixed(2);
+
   } catch (err) {
     console.error("Wallet load error:", err);
   }
 }
 
+// Auto-refresh wallet every 10 seconds
 setInterval(loadWallet, 10000);
 loadWallet();
+
 
 /* ---------------------------
    DEPOSIT FUNCTION
 ---------------------------- */
-if (depositBtn) depositBtn.onclick = async () => {
+depositBtn.onclick = async () => {
   if (!token) {
     alert("⚠️ Please log in to continue.");
     return;
@@ -256,11 +269,18 @@ if (depositBtn) depositBtn.onclick = async () => {
   const amountInput = prompt("💰 Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
 
+  // Validate entered amount
   if (!amountInput || isNaN(amount)) {
     return alert("❌ Please enter a valid numeric amount.");
   }
-  if (amount < 100) return alert("⚠️ Minimum deposit is KSh 100. Please enter KSh 100 or more.");
-  if (amount > 150000) return alert("⚠️ Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
+
+  // Check minimum and maximum limits
+  if (amount < 100) {
+    return alert("⚠️ Minimum deposit is KSh 100. Please enter KSh 100 or more.");
+  }
+  if (amount > 150000) {
+    return alert("⚠️ Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
+  }
 
   const payerEmail = prompt("📧 Enter your email for this deposit:");
   if (!payerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
@@ -283,10 +303,11 @@ if (depositBtn) depositBtn.onclick = async () => {
       return alert(`⚠️ Payment initialization failed: ${data.message}`);
     }
 
+    // Initialize Paystack
     const handler = PaystackPop.setup({
       key: "pk_test_2b2ffe1c8b8f4b0da991dd13fc418bdf86dbed06",
       email: payerEmail,
-      amount: Math.round(amount * 100),
+      amount: Math.round(amount * 100), // Convert to kobo
       currency: "KES",
       reference: data.data.reference,
       callback: function () {
@@ -308,14 +329,14 @@ if (depositBtn) depositBtn.onclick = async () => {
 /* ---------------------------
    WITHDRAW FUNCTION
 ---------------------------- */
-if (withdrawBtn) withdrawBtn.onclick = () => {
+withdrawBtn.onclick = () => {
   if (!token) return alert("⚠️ Please login first.");
-  if (withdrawOverlay) withdrawOverlay.classList.remove("hidden");
+  withdrawOverlay.classList.remove("hidden");
 };
 
-if (closeWithdraw) closeWithdraw.onclick = () => withdrawOverlay.classList.add("hidden");
+closeWithdraw.onclick = () => withdrawOverlay.classList.add("hidden");
 
-if (submitWithdraw) submitWithdraw.onclick = async () => {
+submitWithdraw.onclick = async () => {
   const name = document.getElementById("wName").value.trim();
   const wemail = document.getElementById("wEmail").value.trim();
   const phone = document.getElementById("wPhone").value.trim();
@@ -324,9 +345,10 @@ if (submitWithdraw) submitWithdraw.onclick = async () => {
     return alert("❌ Please fill all withdrawal fields.");
   }
 
-  const availableElLocal = document.getElementById("available");
-  const availableBalance = parseFloat((availableElLocal ? availableElLocal.textContent : "0").replace(/,/g, ""));
-
+  // ✅ Check available balance
+  const availableEl = document.getElementById("available");
+  const availableBalance = parseFloat(availableEl.textContent.replace(/,/g, ""));
+  
   if (isNaN(availableBalance)) {
     return alert("⚠️ Unable to read your available balance.");
   }
@@ -347,7 +369,7 @@ if (submitWithdraw) submitWithdraw.onclick = async () => {
 
     const data = await res.json();
     alert(data.message || "✅ Withdrawal submitted for review.");
-    if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
+    withdrawOverlay.classList.add("hidden");
     loadWallet();
   } catch (err) {
     console.error("Withdraw error:", err);
@@ -355,7 +377,7 @@ if (submitWithdraw) submitWithdraw.onclick = async () => {
   }
 };
 
-/* ----- FINAL GAME LOGIC (CLEAN + HARD TIMER) ----- */
+/* ----- FINAL GAME LOGIC (CLEAN + FORCED TIMER) ----- */
 
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
@@ -363,12 +385,13 @@ let tokens = [];
 let hazards = [];
 let sessionId = null;
 let sessionToken = null;
+let dragActive = false;
+let touchStart = null;
+let baseSpeed = 1.5;
+let safeZoneRadius = 150;
 let frameHandle = null;
-let gameFrame = null;
-let timerFrame = null;
 let timer = 30;
 let totalTime = 30;
-let lastFrameTime = null;
 
 /* ----- AUDIO SETUP ----- */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -397,29 +420,29 @@ function playHazardSound() {
 
 function playWinSound() {
   let startTime = audioCtx.currentTime;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 15; i++) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(400 + i * 60, startTime + i * 0.1);
-    gain.gain.setValueAtTime(0.08, startTime + i * 0.1);
+    osc.frequency.setValueAtTime(300 + i * 40, startTime + i * 0.6);
+    gain.gain.setValueAtTime(0.12, startTime + i * 0.6);
     osc.connect(gain).connect(audioCtx.destination);
-    osc.start(startTime + i * 0.1);
-    osc.stop(startTime + i * 0.1 + 0.08);
+    osc.start(startTime + i * 0.6);
+    osc.stop(startTime + i * 0.6 + 0.5);
   }
 }
 
 function playLoseSound() {
   let startTime = audioCtx.currentTime;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 10; i++) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(700 - i * 50, startTime + i * 0.07);
-    gain.gain.setValueAtTime(0.08, startTime + i * 0.07);
+    osc.frequency.setValueAtTime(700 - i * 40, startTime + i * 0.5);
+    gain.gain.setValueAtTime(0.12, startTime + i * 0.5);
     osc.connect(gain).connect(audioCtx.destination);
-    osc.start(startTime + i * 0.07);
-    osc.stop(startTime + i * 0.07 + 0.06);
+    osc.start(startTime + i * 0.5);
+    osc.stop(startTime + i * 0.5 + 0.4);
   }
 }
 
@@ -431,53 +454,14 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/* ----- TIMER & BAR CREATION (FORCE CONTROL) ----- */
-function createTimerBar() {
-  // Ensure there is a parent #timerBar at bottom. If it doesn't exist, create it.
-  let bar = document.getElementById("timerBar");
-  if (!bar) {
-    bar = document.createElement("div");
-    bar.id = "timerBar";
-    // minimal inline style to place at bottom — user CSS can override layout.
-    Object.assign(bar.style, {
-      position: "absolute",
-      left: "0",
-      right: "0",
-      bottom: "0",
-      height: "10px",
-      width: "100%",
-      background: "#333",
-      zIndex: "9999",
-    });
-    document.body.appendChild(bar);
-  } else {
-    // clear previous fills
-    bar.innerHTML = "";
-  }
-
-  // Create fresh fill
-  const fill = document.createElement("div");
-  fill.id = "timerFill";
-  // Inline style controlled by JS so CSS transitions do not interfere
-  Object.assign(fill.style, {
-    height: "100%",
-    width: "100%",
-    background: "linear-gradient(to right, #ffcc00, #ff5500)",
-    boxShadow: "0 0 8px #ffcc00",
-    transition: "none",
-  });
-
-  bar.appendChild(fill);
-  return fill;
-}
-
-/* ----- GAME SETUP ----- */
+/* ----- SETUP GAME ENVIRONMENT ----- */
 function setupGame() {
   arena.width = window.innerWidth;
   arena.height = window.innerHeight - 120;
   player.x = arena.width / 2;
   player.y = arena.height / 2;
-  player.vx = player.vy = 0;
+  player.vx = 0;
+  player.vy = 0;
 
   const isMobile = /mobile|iphone|ipad|ipod|android/i.test(navigator.userAgent);
   const numHazards = isMobile ? 5 : 9;
@@ -499,23 +483,28 @@ function setupGame() {
     do {
       hx = random(50, arena.width - 50);
       hy = random(50, arena.height - 50);
-    } while (distance({ x: hx, y: hy }, player) < 150);
+    } while (distance({ x: hx, y: hy }, player) < safeZoneRadius);
 
     hazards.push({
       x: hx,
       y: hy,
       r: random(10, 25),
-      dx: random(-2, 2),
-      dy: random(-2, 2),
+      dx: random(-2, 2) * baseSpeed,
+      dy: random(-2, 2) * baseSpeed,
+      baseSpeed,
+      jitterTimer: random(30, 120),
+      chase: false,
+      chaseTimer: 0,
+      chaseCooldown: 0,
+      glowPhase: 0,
     });
   }
 }
 
-/* ----- DRAW ALL GAME ELEMENTS ----- */
+/* ----- DRAW EVERYTHING ----- */
 function draw() {
   ctx.clearRect(0, 0, arena.width, arena.height);
 
-  // Tokens
   ctx.fillStyle = "lime";
   tokens.forEach((t) => {
     if (!t.collected) {
@@ -525,32 +514,66 @@ function draw() {
     }
   });
 
-  // Hazards
-  ctx.fillStyle = "red";
   hazards.forEach((h) => {
+    if (h.chase) {
+      h.glowPhase += 0.1;
+      const glow = 0.5 + 0.5 * Math.sin(h.glowPhase);
+      ctx.shadowBlur = 20 * glow;
+      ctx.shadowColor = "yellow";
+    } else ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "red";
     ctx.beginPath();
     ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
   });
 
-  // Player
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 }
 
-/* ----- UPDATE MOVEMENT, COLLISIONS ----- */
+/* ----- UPDATE LOGIC ----- */
 function update() {
-  if (!gameRunning) return;
+  if (!dragActive) {
+    player.vx *= 0.92;
+    player.vy *= 0.92;
+  }
 
-  // simple friction-less movement (your original logic may update vx/vy elsewhere)
   player.x += player.vx;
   player.y += player.vy;
   player.x = Math.max(player.r, Math.min(arena.width - player.r, player.x));
   player.y = Math.max(player.r, Math.min(arena.height - player.r, player.y));
 
   hazards.forEach((h) => {
+    const distToPlayer = distance(h, player);
+    if (!h.chase && h.chaseCooldown <= 0 && distToPlayer < 150 && Math.random() < 0.015) {
+      h.chase = true;
+      h.chaseTimer = 120;
+    }
+
+    if (h.chase) {
+      const angle = Math.atan2(player.y - h.y, player.x - h.x);
+      const chaseSpeed = h.baseSpeed * 1.5;
+      h.dx = Math.cos(angle) * chaseSpeed;
+      h.dy = Math.sin(angle) * chaseSpeed;
+      h.chaseTimer--;
+      if (h.chaseTimer <= 0) {
+        h.chase = false;
+        h.chaseCooldown = random(60, 180);
+      }
+    } else {
+      h.jitterTimer--;
+      if (h.jitterTimer <= 0) {
+        h.dx += random(-0.5, 0.5);
+        h.dy += random(-0.5, 0.5);
+        h.jitterTimer = random(30, 120);
+      }
+      if (h.chaseCooldown > 0) h.chaseCooldown--;
+    }
+
     h.x += h.dx;
     h.y += h.dy;
     if (h.x < h.r || h.x > arena.width - h.r) h.dx *= -1;
@@ -577,168 +600,7 @@ function update() {
   }
 }
 
-/* ----- TIMER CONTROL (PURE JS) ----- */
-function resetTimerBarAndState() {
-  // Cancel any running timer animation frames
-  if (timerFrame) {
-    cancelAnimationFrame(timerFrame);
-    timerFrame = null;
-  }
-  if (gameFrame) {
-    cancelAnimationFrame(gameFrame);
-    gameFrame = null;
-  }
-  // Recreate the timer bar and fill fresh
-  timerFill = createTimerBar();
-  // Reset timer state variables
-  timer = totalTime = 30; // enforce 30 seconds per round
-  lastFrameTime = null;
-}
-
-let timerStartPerf = null;
-function timerLoop(now) {
-  if (!gameRunning) return; // do nothing if not running
-  if (!timerStartPerf) timerStartPerf = now;
-  const elapsedSec = (now - timerStartPerf) / 1000;
-  const remaining = Math.max(0, totalTime - elapsedSec);
-  timer = remaining;
-
-  if (timerFill) {
-    // set width strictly from JS (no CSS transitions)
-    timerFill.style.transition = "none";
-    timerFill.style.width = `${(timer / totalTime) * 100}%`;
-  }
-
-  if (remaining <= 0) {
-    // time's up
-    if (timerFill) timerFill.style.width = "0%";
-    playLoseSound();
-    endGame("lose");
-    return;
-  }
-  timerFrame = requestAnimationFrame(timerLoop);
-}
-
-/* ----- START / END GAME ----- */
-async function startGame() {
-  if (!token) return alert("Please login first.");
-  const stake = parseInt(stakeAmount ? stakeAmount.value : "0", 10);
-  if (isNaN(stake) || stake < 10 || stake > 100000) return alert("Invalid stake");
-
-  // Forcefully reset timer bar and internal state now (fresh every round)
-  resetTimerBarAndState();
-
-  try {
-    const res = await fetch(`${API_BASE}/game/start`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ stake }),
-    });
-    const data = await res.json();
-
-    if (data.sessionId) {
-      sessionId = data.sessionId;
-      sessionToken = data.sessionToken;
-      setupGame();
-
-      // Show countdown then start game and timer simultaneously from JS-controlled clock
-      showCountdown(5, () => {
-        // ensure any previous frames canceled
-        if (timerFrame) {
-          cancelAnimationFrame(timerFrame);
-          timerFrame = null;
-        }
-        if (gameFrame) {
-          cancelAnimationFrame(gameFrame);
-          gameFrame = null;
-        }
-        // start fresh
-        timerStartPerf = null;
-        gameRunning = true;
-        // start game loop and timer loop: both use requestAnimationFrame and independent clocks
-        gameFrame = requestAnimationFrame(gameLoop);
-        timerFrame = requestAnimationFrame(timerLoop);
-      });
-    } else {
-      alert(data.message || "Could not start session");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Start game error");
-  }
-}
-
-async function endGame(result) {
-  // If game already stopped, still ensure timer bar is frozen and state cleared
-  if (!gameRunning) {
-    // Still ensure any frames are canceled and timer bar is full (so next start recreates)
-    if (timerFrame) {
-      cancelAnimationFrame(timerFrame);
-      timerFrame = null;
-    }
-    if (gameFrame) {
-      cancelAnimationFrame(gameFrame);
-      gameFrame = null;
-    }
-  }
-
-  // Stop gameplay
-  gameRunning = false;
-
-  // Cancel frames
-  if (timerFrame) {
-    cancelAnimationFrame(timerFrame);
-    timerFrame = null;
-  }
-  if (gameFrame) {
-    cancelAnimationFrame(gameFrame);
-    gameFrame = null;
-  }
-
-  // Freeze timer visual at current or full state (we choose to leave at current state).
-  // But to meet your requirement - fill instantly on round end and keep it full until next start:
-  if (timerFill) {
-    timerFill.style.transition = "none";
-    // Keep the bar full so player can't gain extra time: as requested, fill on round end
-    timerFill.style.width = "100%";
-  }
-
-  // Submit result in background; keep UI immediate
-  try {
-    fetch(`${API_BASE}/game/result`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ sessionId, result }),
-    }).catch((e) => console.error("Result submit failed:", e));
-  } catch (err) {
-    console.error("Result submit error:", err);
-  }
-
-  // Show message and refresh wallet
-  try {
-    alert(result === "win" ? "You won!" : "You lost!");
-  } catch (e) {}
-
-  loadWallet();
-
-  // Keep timerFill as-is (full) until a user clicks Start which will recreate and reset everything
-}
-
-/* ----- GAME LOOP ----- */
-function gameLoop() {
-  if (!gameRunning) return;
-  draw();
-  update();
-  gameFrame = requestAnimationFrame(gameLoop);
-}
-
-/* ----- COUNTDOWN (same as before) ----- */
+/* ----- COUNTDOWN ----- */
 function showCountdown(seconds, callback) {
   const overlay = document.createElement("div");
   Object.assign(overlay.style, {
@@ -764,15 +626,137 @@ function showCountdown(seconds, callback) {
     if (count > 0) overlay.textContent = count;
     else {
       clearInterval(interval);
-      try {
-        document.body.removeChild(overlay);
-      } catch (e) {}
+      document.body.removeChild(overlay);
       callback();
     }
   }, 1000);
 }
 
-/* ----- HOOK START BUTTON ----- */
-if (startGameBtn) startGameBtn.onclick = startGame;
+/* ----- CUSTOM ALERT ----- */
+function showGameAlert(message, callback) {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: "10000",
+  });
+  modal.innerHTML = `
+    <div style="background:#fff;padding:30px 50px;border-radius:15px;text-align:center;max-width:300px;">
+      <p style="font-size:20px;color:#222;">${message}</p>
+      <button id="okBtn" style="margin-top:20px;padding:8px 20px;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">OK</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector("#okBtn").onclick = () => {
+    document.body.removeChild(modal);
+    if (callback) callback();
+  };
+}
 
-/* ----- END OF FILE ----- */
+
+function resetTimer() {
+  cancelAnimationFrame(frameHandle);
+  timer = totalTime;
+  if (timerFill) {
+    timerFill.style.transition = "none";
+    timerFill.style.width = "100%";
+  }
+}
+
+function startTimer() {
+  resetTimer();
+  tickTimer();
+}
+
+function tickTimer() {
+  if (!gameRunning) return;
+  timer -= 1 / 60;
+  if (timer <= 0) {
+    timer = 0;
+    if (timerFill) timerFill.style.width = "0%";
+    playLoseSound();
+    endGame("lose");
+    return;
+  }
+  if (timerFill) timerFill.style.width = `${(timer / totalTime) * 100}%`;
+  frameHandle = requestAnimationFrame(tickTimer);
+}
+
+/* ----- START GAME ----- */
+async function startGame() {
+  if (!token) return alert("Please login first.");
+  const stake = parseInt(stakeAmount.value);
+  if (isNaN(stake) || stake < 10 || stake > 100000)
+    return alert("Invalid stake");
+
+  resetTimer();
+
+  try {
+    const res = await fetch(`${API_BASE}/game/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ stake }),
+    });
+    const data = await res.json();
+
+    if (data.sessionId) {
+      sessionId = data.sessionId;
+      sessionToken = data.sessionToken;
+      setupGame();
+
+      showCountdown(5, () => {
+        resetTimer();
+        gameRunning = true;
+        requestAnimationFrame(gameLoop);
+        startTimer();
+      });
+    } else alert(data.message || "Could not start session");
+  } catch (err) {
+    console.error(err);
+    alert("Start game error");
+  }
+}
+
+/* ----- END GAME ----- */
+async function endGame(result) {
+  if (!gameRunning) return;
+  gameRunning = false;
+  cancelAnimationFrame(frameHandle);
+  resetTimer();
+
+  try {
+    await fetch(`${API_BASE}/game/result`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ sessionId, result }),
+    });
+    alert(result === "win" ? "You won!" : "You lost!");
+    loadWallet();
+  } catch (err) {
+    console.error(err);
+    alert("Error submitting game result.");
+  }
+}
+
+/* ----- GAME LOOP ----- */
+function gameLoop() {
+  if (!gameRunning) return;
+  draw();
+  update();
+  frameHandle = requestAnimationFrame(gameLoop);
+}
+
+startGameBtn.onclick = startGame;
+
