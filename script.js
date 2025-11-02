@@ -752,7 +752,7 @@ async function endGame(result) {
 
   try {
     // continue with server update
-    await fetch(`${API_BASE}/game/result`, {
+    await fetch(`${API_BASE}/ame/result`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -773,4 +773,5 @@ async function endGame(result) {
 
 
 startGameBtn.onclick = startGame;
+
 
