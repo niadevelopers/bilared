@@ -381,7 +381,10 @@ submitWithdraw.onclick = async () => {
   }
 };
 
-/* ----- FINAL GAME LOGIC (Hardcoded ball counts by device) ----- */
+
+
+
+  /* ----- FINAL GAME LOGIC (Hardcoded ball counts by device) ----- */
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
@@ -561,13 +564,11 @@ function update() {
 
   player.x += player.vx;
   player.y += player.vy;
-
   player.x = Math.max(player.r, Math.min(arena.width - player.r, player.x));
   player.y = Math.max(player.r, Math.min(arena.height - player.r, player.y));
 
   hazards.forEach((h) => {
     const distToPlayer = distance(h, player);
-
     if (!h.chase && h.chaseCooldown <= 0 && distToPlayer < 150 && Math.random() < 0.015) {
       h.chase = true;
       h.chaseTimer = 120;
@@ -603,21 +604,21 @@ function update() {
   tokens.forEach((t) => {
     if (!t.collected && distance(player, t) < player.r + t.r) {
       t.collected = true;
-      playTokenSound(); // <-- Play token sound
+      playTokenSound();
     }
   });
 
   // Hazard collision
   hazards.forEach((h) => {
     if (distance(player, h) < player.r + h.r) {
-      playHazardSound(); // <-- Play hazard collision
+      playHazardSound();
       endGame("lose");
     }
   });
 
   // Win condition
   if (tokens.every((t) => t.collected)) {
-    playWinSound(); // <-- Play win sound
+    playWinSound();
     endGame("win");
   }
 }
@@ -630,62 +631,11 @@ function gameLoop() {
   timer -= 1 / 60;
   timerFill.style.width = `${(timer / totalTime) * 100}%`;
   if (timer <= 0) {
-    playLoseSound(); // <-- Timer ran out
+    playLoseSound();
     endGame("lose");
   }
   requestAnimationFrame(gameLoop);
 }
-
-/* ----- TOUCH DRAG CONTROL (high responsiveness with momentum) ----- */
-arena.addEventListener("touchstart", (e) => {
-  if (!gameRunning) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = arena.getBoundingClientRect();
-  const tx = t.clientX - rect.left;
-  const ty = t.clientY - rect.top;
-  if (distance({ x: tx, y: ty }, player) <= player.r + 25) {
-    dragActive = true;
-    touchStart = { x: tx, y: ty };
-    player.vx = 0;
-    player.vy = 0;
-  }
-});
-
-arena.addEventListener("touchmove", (e) => {
-  if (!dragActive || !gameRunning) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = arena.getBoundingClientRect();
-  const tx = t.clientX - rect.left;
-  const ty = t.clientY - rect.top;
-  const dx = tx - touchStart.x;
-  const dy = ty - touchStart.y;
-  const accelFactor = 0.9;
-  player.vx += (dx * accelFactor - player.vx) * 0.6;
-  player.vy += (dy * accelFactor - player.vy) * 0.6;
-  player.x += player.vx;
-  player.y += player.vy;
-  touchStart = { x: tx, y: ty };
-  player.x = Math.max(player.r, Math.min(arena.width - player.r, player.x));
-  player.y = Math.max(player.r, Math.min(arena.height - player.r, player.y));
-});
-
-arena.addEventListener("touchend", () => {
-  dragActive = false;
-  player.vx = 0;
-  player.vy = 0;
-});
-
-/* Laptop / mouse control */
-arena.addEventListener("mousemove", (e) => {
-  if (!gameRunning) return;
-  const rect = arena.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  player.x += (mx - player.x) * 0.1;
-  player.y += (my - player.y) * 0.1;
-});
 
 /* Countdown before game begins */
 function showCountdown(seconds, callback) {
@@ -706,10 +656,8 @@ function showCountdown(seconds, callback) {
     fontWeight: "bold",
   });
   document.body.appendChild(overlay);
-
   let count = seconds;
   overlay.textContent = count;
-
   const interval = setInterval(() => {
     count--;
     if (count > 0) overlay.textContent = count;
@@ -721,12 +669,39 @@ function showCountdown(seconds, callback) {
   }, 1000);
 }
 
+/* Custom game alert (non-blocking) */
+function showGameAlert(message, callback) {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: "10000",
+  });
+  modal.innerHTML = `
+    <div style="background:#fff;padding:30px 50px;border-radius:15px;text-align:center;max-width:300px;">
+      <p style="font-size:20px;color:#222;">${message}</p>
+      <button id="okBtn" style="margin-top:20px;padding:8px 20px;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">OK</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector("#okBtn").onclick = () => {
+    document.body.removeChild(modal);
+    if (callback) callback();
+  };
+}
+
 /* Start game */
 async function startGame() {
-  if (!token) return alert("Please login first.");
+  if (!token) return showGameAlert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
-    return alert("Invalid stake");
+    return showGameAlert("Invalid stake");
 
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
@@ -743,27 +718,20 @@ async function startGame() {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
-
-      // Countdown before round begins
       showCountdown(5, () => {
-        // Full timer before countdown depletion starts
         timer = totalTime = 30;
         timerFill.style.transition = "none";
         timerFill.style.width = "100%";
-
-        // Force browser to repaint, then enable depletion
         requestAnimationFrame(() => {
           timerFill.style.transition = "";
           gameRunning = true;
           gameLoop();
         });
       });
-    } else {
-      alert(data.message || "Could not start session");
-    }
+    } else showGameAlert(data.message || "Could not start session");
   } catch (err) {
     console.error(err);
-    alert("Start game error");
+    showGameAlert("Start game error");
   }
 }
 
@@ -771,6 +739,10 @@ async function startGame() {
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
+  timer = totalTime;
+  timerFill.style.transition = "none";
+  timerFill.style.width = "100%";
+  setTimeout(() => (timerFill.style.transition = ""), 50);
 
   try {
     await fetch(`${API_BASE}/game/result`, {
@@ -781,27 +753,17 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
+
+    // Use non-blocking alert and reset timer smoothly
+    showGameAlert(result === "win" ? "You won!" : "You lost!", () => {
+      timer = totalTime;
+      timerFill.style.width = "100%";
+      loadWallet();
+    });
   } catch (err) {
-    console.error("Result submission failed:", err);
+    console.error(err);
+    showGameAlert("Error submitting game result.");
   }
-
-  // Always show the alert to user
-  alert(result === "win" ? "You won!" : "You lost!");
-  loadWallet();
-
-  // === FORCE TIMER BAR REFILL IMMEDIATELY AFTER ALERT ===
-  timer = totalTime = 30;
-  if (timerFill) {
-    // Remove any transition and force full bar instantly
-    timerFill.style.transition = "none";
-    timerFill.style.width = "100%";
-    // Force repaint so style applies now
-    void timerFill.offsetWidth;
-    // Re-enable transition so next round can deplete smoothly
-    timerFill.style.transition = "";
-  }
-
-  console.log("Timer forcibly refilled after round end.");
 }
 
 startGameBtn.onclick = startGame;
