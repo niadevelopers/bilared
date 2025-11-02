@@ -511,9 +511,9 @@ function setupGame() {
     });
   }
 
-  console.log(
-    `Device: ${isAndroid || isMobile ? "Android" : "Desktop"} | Red Balls: ${numHazards} | Green Balls: ${numTokens}`
-  );
+  //console.log(
+    //`Device: ${isAndroid || isMobile ? "Android" : "Desktop"} | Red Balls: ${numHazards} | Green Balls: ${numTokens}`
+ // );
 }
 
 /* Draw all game elements */
@@ -777,4 +777,5 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
 
