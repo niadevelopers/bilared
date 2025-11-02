@@ -377,20 +377,21 @@ submitWithdraw.onclick = async () => {
   }
 };
 
+/* ----- FINAL GAME LOGIC (CLEAN + FORCED TIMER) ----- */
 
-/* ----- FINAL GAME LOGIC (Hardcoded ball counts by device) ----- */
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
 let hazards = [];
 let sessionId = null;
 let sessionToken = null;
-let timer = 30;
-let totalTime = 30;
 let dragActive = false;
 let touchStart = null;
 let baseSpeed = 1.5;
 let safeZoneRadius = 150;
+let frameHandle = null;
+let timer = 30;
+let totalTime = 30;
 
 /* ----- AUDIO SETUP ----- */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -445,7 +446,7 @@ function playLoseSound() {
   }
 }
 
-/* Utility helpers */
+/* ----- UTILITIES ----- */
 function random(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -453,7 +454,7 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/* Setup game environment */
+/* ----- SETUP GAME ENVIRONMENT ----- */
 function setupGame() {
   arena.width = window.innerWidth;
   arena.height = window.innerHeight - 120;
@@ -462,17 +463,9 @@ function setupGame() {
   player.vx = 0;
   player.vy = 0;
 
-  const isAndroid = /android/i.test(navigator.userAgent);
   const isMobile = /mobile|iphone|ipad|ipod|android/i.test(navigator.userAgent);
-
-  let numHazards, numTokens;
-  if (isAndroid || isMobile) {
-    numHazards = 5;  
-    numTokens = 8;   
-  } else {
-    numHazards = 9;  
-    numTokens = 12;  
-  }
+  const numHazards = isMobile ? 5 : 9;
+  const numTokens = isMobile ? 8 : 12;
 
   tokens = [];
   for (let i = 0; i < numTokens; i++) {
@@ -506,17 +499,12 @@ function setupGame() {
       glowPhase: 0,
     });
   }
-
-  console.log(
-    `Device: ${isAndroid || isMobile ? "Android" : "Desktop"} | Red Balls: ${numHazards} | Green Balls: ${numTokens}`
-  );
 }
 
-/* Draw all game elements */
+/* ----- DRAW EVERYTHING ----- */
 function draw() {
   ctx.clearRect(0, 0, arena.width, arena.height);
 
-  // Tokens
   ctx.fillStyle = "lime";
   tokens.forEach((t) => {
     if (!t.collected) {
@@ -526,7 +514,6 @@ function draw() {
     }
   });
 
-  // Hazards
   hazards.forEach((h) => {
     if (h.chase) {
       h.glowPhase += 0.1;
@@ -542,14 +529,13 @@ function draw() {
     ctx.shadowBlur = 0;
   });
 
-  // Player
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 }
 
-/* Update movement, collisions, and logic */
+/* ----- UPDATE LOGIC ----- */
 function update() {
   if (!dragActive) {
     player.vx *= 0.92;
@@ -558,13 +544,11 @@ function update() {
 
   player.x += player.vx;
   player.y += player.vy;
-
   player.x = Math.max(player.r, Math.min(arena.width - player.r, player.x));
   player.y = Math.max(player.r, Math.min(arena.height - player.r, player.y));
 
   hazards.forEach((h) => {
     const distToPlayer = distance(h, player);
-
     if (!h.chase && h.chaseCooldown <= 0 && distToPlayer < 150 && Math.random() < 0.015) {
       h.chase = true;
       h.chaseTimer = 120;
@@ -596,95 +580,27 @@ function update() {
     if (h.y < h.r || h.y > arena.height - h.r) h.dy *= -1;
   });
 
-  // Token collection
   tokens.forEach((t) => {
     if (!t.collected && distance(player, t) < player.r + t.r) {
       t.collected = true;
-      playTokenSound(); // <-- Play token sound
+      playTokenSound();
     }
   });
 
-  // Hazard collision
   hazards.forEach((h) => {
     if (distance(player, h) < player.r + h.r) {
-      playHazardSound(); // <-- Play hazard collision
+      playHazardSound();
       endGame("lose");
     }
   });
 
-  // Win condition
   if (tokens.every((t) => t.collected)) {
-    playWinSound(); // <-- Play win sound
+    playWinSound();
     endGame("win");
   }
 }
 
-/* Game loop */
-function gameLoop() {
-  if (!gameRunning) return;
-  draw();
-  update();
-  timer -= 1 / 60;
-  timerFill.style.width = `${(timer / totalTime) * 100}%`;
-  if (timer <= 0) {
-    playLoseSound(); // <-- Timer ran out
-    endGame("lose");
-  }
-  requestAnimationFrame(gameLoop);
-}
-
-/* ----- TOUCH DRAG CONTROL (high responsiveness with momentum) ----- */
-arena.addEventListener("touchstart", (e) => {
-  if (!gameRunning) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = arena.getBoundingClientRect();
-  const tx = t.clientX - rect.left;
-  const ty = t.clientY - rect.top;
-  if (distance({ x: tx, y: ty }, player) <= player.r + 25) {
-    dragActive = true;
-    touchStart = { x: tx, y: ty };
-    player.vx = 0;
-    player.vy = 0;
-  }
-});
-
-arena.addEventListener("touchmove", (e) => {
-  if (!dragActive || !gameRunning) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = arena.getBoundingClientRect();
-  const tx = t.clientX - rect.left;
-  const ty = t.clientY - rect.top;
-  const dx = tx - touchStart.x;
-  const dy = ty - touchStart.y;
-  const accelFactor = 0.9;
-  player.vx += (dx * accelFactor - player.vx) * 0.6;
-  player.vy += (dy * accelFactor - player.vy) * 0.6;
-  player.x += player.vx;
-  player.y += player.vy;
-  touchStart = { x: tx, y: ty };
-  player.x = Math.max(player.r, Math.min(arena.width - player.r, player.x));
-  player.y = Math.max(player.r, Math.min(arena.height - player.r, player.y));
-});
-
-arena.addEventListener("touchend", () => {
-  dragActive = false;
-  player.vx = 0;
-  player.vy = 0;
-});
-
-/* Laptop / mouse control */
-arena.addEventListener("mousemove", (e) => {
-  if (!gameRunning) return;
-  const rect = arena.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  player.x += (mx - player.x) * 0.1;
-  player.y += (my - player.y) * 0.1;
-});
-
-/* Countdown before game begins */
+/* ----- COUNTDOWN ----- */
 function showCountdown(seconds, callback) {
   const overlay = document.createElement("div");
   Object.assign(overlay.style, {
@@ -703,10 +619,8 @@ function showCountdown(seconds, callback) {
     fontWeight: "bold",
   });
   document.body.appendChild(overlay);
-
   let count = seconds;
   overlay.textContent = count;
-
   const interval = setInterval(() => {
     count--;
     if (count > 0) overlay.textContent = count;
@@ -718,12 +632,71 @@ function showCountdown(seconds, callback) {
   }, 1000);
 }
 
-/* Start game */
+/* ----- CUSTOM ALERT ----- */
+function showGameAlert(message, callback) {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: "10000",
+  });
+  modal.innerHTML = `
+    <div style="background:#fff;padding:30px 50px;border-radius:15px;text-align:center;max-width:300px;">
+      <p style="font-size:20px;color:#222;">${message}</p>
+      <button id="okBtn" style="margin-top:20px;padding:8px 20px;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">OK</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector("#okBtn").onclick = () => {
+    document.body.removeChild(modal);
+    if (callback) callback();
+  };
+}
+
+
+function resetTimer() {
+  cancelAnimationFrame(frameHandle);
+  timer = totalTime;
+  if (timerFill) {
+    timerFill.style.transition = "none";
+    timerFill.style.width = "100%";
+  }
+}
+
+function startTimer() {
+  resetTimer();
+  tickTimer();
+}
+
+function tickTimer() {
+  if (!gameRunning) return;
+  timer -= 1 / 60;
+  if (timer <= 0) {
+    timer = 0;
+    if (timerFill) timerFill.style.width = "0%";
+    playLoseSound();
+    endGame("lose");
+    return;
+  }
+  if (timerFill) timerFill.style.width = `${(timer / totalTime) * 100}%`;
+  frameHandle = requestAnimationFrame(tickTimer);
+}
+
+/* ----- START GAME ----- */
 async function startGame() {
   if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
     return alert("Invalid stake");
+
+  resetTimer();
+
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
       method: "POST",
@@ -734,15 +707,17 @@ async function startGame() {
       body: JSON.stringify({ stake }),
     });
     const data = await res.json();
+
     if (data.sessionId) {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
+
       showCountdown(5, () => {
-        timer = 30;
-        totalTime = 30;
+        resetTimer();
         gameRunning = true;
-        gameLoop();
+        requestAnimationFrame(gameLoop);
+        startTimer();
       });
     } else alert(data.message || "Could not start session");
   } catch (err) {
@@ -751,10 +726,13 @@ async function startGame() {
   }
 }
 
-/* End game */
+/* ----- END GAME ----- */
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
+  cancelAnimationFrame(frameHandle);
+  resetTimer();
+
   try {
     await fetch(`${API_BASE}/game/result`, {
       method: "POST",
@@ -770,6 +748,14 @@ async function endGame(result) {
     console.error(err);
     alert("Error submitting game result.");
   }
+}
+
+/* ----- GAME LOOP ----- */
+function gameLoop() {
+  if (!gameRunning) return;
+  draw();
+  update();
+  frameHandle = requestAnimationFrame(gameLoop);
 }
 
 startGameBtn.onclick = startGame;
