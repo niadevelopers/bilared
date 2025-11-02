@@ -727,6 +727,7 @@ async function startGame() {
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
     return alert("Invalid stake");
+
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
       method: "POST",
@@ -737,17 +738,30 @@ async function startGame() {
       body: JSON.stringify({ stake }),
     });
     const data = await res.json();
+
     if (data.sessionId) {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
+
+      // Start countdown before the game
       showCountdown(5, () => {
-        timer = 30;
-        totalTime = 30;
-        gameRunning = true;
-        gameLoop();
+        timer = totalTime = 30;
+
+        // Reset timer bar to full immediately before starting countdown depletion
+        timerFill.style.transition = "none";
+        timerFill.style.width = "100%";
+
+        // Allow a frame so transition re-enables smoothly
+        requestAnimationFrame(() => {
+          timerFill.style.transition = "";
+          gameRunning = true;
+          gameLoop();
+        });
       });
-    } else alert(data.message || "Could not start session");
+    } else {
+      alert(data.message || "Could not start session");
+    }
   } catch (err) {
     console.error(err);
     alert("Start game error");
@@ -758,6 +772,13 @@ async function startGame() {
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
+
+  // Immediately reset timer bar visually to full when the round ends
+  timer = totalTime;
+  timerFill.style.transition = "none";
+  timerFill.style.width = "100%";
+  setTimeout(() => (timerFill.style.transition = ""), 50);
+
   try {
     await fetch(`${API_BASE}/game/result`, {
       method: "POST",
@@ -767,6 +788,7 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
+
     alert(result === "win" ? "You won!" : "You lost!");
     loadWallet();
   } catch (err) {
@@ -776,6 +798,3 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
-
-
-
