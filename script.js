@@ -1,4 +1,4 @@
-const API_BASE = "https://e42057e1daa4.ngrok-free.app/api";
+const API_BASE = "/api";
 let token = localStorage.getItem("token");
 let user = null;
 
@@ -776,3 +776,4 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
