@@ -195,8 +195,8 @@ button:hover {
   transform: scale(1.04);
   box-shadow: 0 0 16px rgba(255, 165, 0, 0.5);
 }
- === TIMER BAR ===
-#timerBar {
+
+/*#timerBar {
   width: 100%;
   height: 10px;
   background: #333;
@@ -212,7 +212,7 @@ button:hover {
   background: linear-gradient(to right, #ffcc00, #ff5500);
   box-shadow: 0 0 8px #ffcc00;
   transition: none !important;
-}
+}*/
 
 
 /* === OVERLAY === */
@@ -266,6 +266,7 @@ button:hover {
 
 
 }
+
 
 
 
