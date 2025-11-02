@@ -865,7 +865,29 @@ async function endGame(result) {
   }
 }
 
+// --- FINAL FAILSAFE TIMER CONTROL ---
+startGameBtn.addEventListener("click", () => {
+  // kill any animation, lock resets
+  if (animationFrame) cancelAnimationFrame(animationFrame);
+  gameRunning = false;
+  timerLocked = true;
+
+  // brutal reset — no transition, no waiting
+  if (timerFill) {
+    timerFill.style.transition = "none";
+    timerFill.style.width = "100%";
+  }
+
+  // make sure core timer vars are reset too
+  totalTime = 30;
+  timer = totalTime;
+
+  // force repaint immediately
+  void timerFill.offsetWidth;
+});
+
 // ensure start button hooked (if not already)
 if (typeof startGameBtn !== "undefined" && startGameBtn) {
   startGameBtn.onclick = startGame;
 }
+
