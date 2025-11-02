@@ -11,22 +11,22 @@ const router = express.Router();
    1️⃣ Initialize Payment — user provides email + amount
 ----------------------------------- */
 router.post("/initiate", async (req, res) => {
-  console.log("⚡ /api/paystack/initiate called");
+  //console.log("⚡ /api/paystack/initiate called");
 
   try {
     const { amount, email } = req.body;
 
     if (!amount || isNaN(amount)) {
-      console.log("❌ Invalid amount:", amount);
+      //console.log("❌ Invalid amount:", amount);
       return res.status(400).json({ message: "Valid amount required" });
     }
 
     if (!email || !email.includes("@")) {
-      console.log("❌ Invalid email:", email);
+      //console.log("❌ Invalid email:", email);
       return res.status(400).json({ message: "Valid email required" });
     }
 
-    console.log(`🧾 Initializing Paystack for ${email} — KES ${amount}`);
+    //console.log(`🧾 Initializing Paystack for ${email} — KES ${amount}`);
 
     const response = await axios.post(
      "https://api.paystack.co/transaction/initialize",
@@ -45,7 +45,7 @@ router.post("/initiate", async (req, res) => {
 );
 
 
-    console.log("➡️ Paystack response received:", response.data);
+    //console.log("➡️ Paystack response received:", response.data);
     res.json(response.data);
   } catch (err) {
     console.error("❌ Error initializing transaction:", err.message);
@@ -59,7 +59,7 @@ router.post("/initiate", async (req, res) => {
 router.post("/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    console.log("📩 Incoming Paystack webhook — raw body captured");
+   //console.log("📩 Incoming Paystack webhook — raw body captured");
 
     try {
       const hash = crypto
@@ -68,13 +68,13 @@ router.post("/webhook",
         .digest("hex");
 
       if (hash !== req.headers["x-paystack-signature"]) {
-        console.log("⚠️ Invalid Paystack signature — ignored");
+        //console.log("⚠️ Invalid Paystack signature — ignored");
         return res.sendStatus(400);
       }
 
       const event = JSON.parse(req.body.toString());
-      console.log("📩 Webhook route hit — processing...");
-      console.log("🧾 Event Type:", event.event);
+      //console.log("📩 Webhook route hit — processing...");
+      //console.log("🧾 Event Type:", event.event);
 
       if (event.event === "charge.success") {
         // Get email from metadata (from initialize)
@@ -84,13 +84,13 @@ router.post("/webhook",
         const reference = event.data.reference;
 
         if (!email) {
-          console.log("⚠️ Webhook: email not found in metadata or customer");
+          //console.log("⚠️ Webhook: email not found in metadata or customer");
           return res.sendStatus(200); // still acknowledge webhook
         }
 
         const user = await User.findOne({ email: email.trim() });
         if (!user) {
-          console.log(`⚠️ Webhook: User not found for ${email}`);
+          //console.log(`⚠️ Webhook: User not found for ${email}`);
           return res.sendStatus(200);
         }
 
@@ -106,7 +106,7 @@ router.post("/webhook",
           createdAt: new Date(),
         });
 
-        console.log(`💰 Wallet updated: ${user.email} +KES ${creditedAmount}`);
+        //console.log(`💰 Wallet updated: ${user.email} +KES ${creditedAmount}`);
       }
 
       res.sendStatus(200);
@@ -118,3 +118,4 @@ router.post("/webhook",
 );
 
 export default router;
+
