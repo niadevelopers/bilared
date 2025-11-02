@@ -758,3 +758,77 @@ async function endGame(result) {
     alert("Error submitting game result.");
   }
 }
+/* ==== PURE JS TIMER OVERRIDE ==== */
+
+// kill any older timer logic
+if (window.timerInterval) clearInterval(window.timerInterval);
+if (window.animationFrame) cancelAnimationFrame(window.animationFrame);
+
+// constants
+const ROUND_TIME = 30; // seconds per round
+let timeLeft = ROUND_TIME;
+let timerRunning = false;
+let frameHandle = null;
+
+// ensure DOM element
+let timerBar = document.getElementById("timerFill");
+if (!timerBar) {
+  timerBar = document.createElement("div");
+  timerBar.id = "timerFill";
+  Object.assign(timerBar.style, {
+    position: "absolute",
+    top: "0",
+    left: "0",
+    height: "6px",
+    background: "lime",
+    width: "100%"
+  });
+  document.body.appendChild(timerBar);
+}
+
+// force reset to full width instantly
+function resetTimerInstant() {
+  timeLeft = ROUND_TIME;
+  timerRunning = false;
+  if (frameHandle) cancelAnimationFrame(frameHandle);
+  timerBar.style.width = "100%";
+}
+
+// update logic — called every frame while running
+function tickTimer() {
+  if (!timerRunning) return;
+  timeLeft -= 1 / 60;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    timerBar.style.width = "0%";
+    timerRunning = false;
+    cancelAnimationFrame(frameHandle);
+    endGame("lose");
+    return;
+  }
+  const pct = (timeLeft / ROUND_TIME) * 100;
+  timerBar.style.width = pct + "%";
+  frameHandle = requestAnimationFrame(tickTimer);
+}
+
+// start timer from full to empty
+function startTimer() {
+  resetTimerInstant();
+  timerRunning = true;
+  frameHandle = requestAnimationFrame(tickTimer);
+}
+
+/* hook these into your existing game flow */
+const _originalStartGame = startGame;
+startGame = async function() {
+  resetTimerInstant(); // always full before a new round
+  await _originalStartGame(); // call the original start logic
+  startTimer(); // now drain down cleanly
+};
+
+const _originalEndGame = endGame;
+endGame = async function(result) {
+  resetTimerInstant(); // snap full when round ends
+  await _originalEndGame(result);
+};
+
