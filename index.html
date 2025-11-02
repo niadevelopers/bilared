@@ -102,6 +102,13 @@
   <script src="installPrompt.js"></script>
   
   <script>
+// Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(() => console.log('✅ Service Worker Registered'))
+      .catch(err => console.log('❌ SW registration failed:', err));
+  }
+    
     window.addEventListener("DOMContentLoaded", () => {
   loadWallet();
 });
@@ -118,4 +125,5 @@ updatePlayerCount();
   </script>
 </body>
 </html>
+
 
