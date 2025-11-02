@@ -698,10 +698,18 @@ function showGameAlert(message, callback) {
 
 /* Start game */
 async function startGame() {
-  if (!token) return showGameAlert("Please login first.");
+  if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
   if (isNaN(stake) || stake < 10 || stake > 100000)
-    return showGameAlert("Invalid stake");
+    return alert("Invalid stake");
+
+  // 🔥 Force the time bar to refill fully right when the round starts
+  timer = totalTime || 30;
+  timerFill.style.transition = "none";
+  timerFill.style.width = "100%";
+  setTimeout(() => {
+    timerFill.style.transition = "";
+  }, 60);
 
   try {
     const res = await fetch(`${API_BASE}/game/start`, {
@@ -713,46 +721,29 @@ async function startGame() {
       body: JSON.stringify({ stake }),
     });
     const data = await res.json();
-
     if (data.sessionId) {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
       showCountdown(5, () => {
-        timer = totalTime = 30;
-        timerFill.style.transition = "none";
-        timerFill.style.width = "100%";
-        requestAnimationFrame(() => {
-          timerFill.style.transition = "";
-          gameRunning = true;
-          gameLoop();
-        });
+        timer = 30;
+        totalTime = 30;
+        gameRunning = true;
+        gameLoop();
       });
-    } else showGameAlert(data.message || "Could not start session");
+    } else alert(data.message || "Could not start session");
   } catch (err) {
     console.error(err);
-    showGameAlert("Start game error");
+    alert("Start game error");
   }
 }
 
 /* End game */
-/* End game */
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
-
-  // 🔥 Force timer bar reset immediately — first thing before anything else
-  timer = totalTime;
-  timerFill.style.transition = "none";
-  timerFill.style.width = "100%";
-  // tiny delay to re-enable transition cleanly
-  setTimeout(() => {
-    timerFill.style.transition = "";
-  }, 60);
-
   try {
-    // continue with server update
-    await fetch(`${API_BASE}/ame/result`, {
+    await fetch(`${API_BASE}/game/result`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -760,18 +751,12 @@ async function endGame(result) {
       },
       body: JSON.stringify({ sessionId, result }),
     });
-
-    // normal flow after refill has already occurred
-    alert(result === "win" ? "You won the game!" : "You lost the game!");
+    alert(result === "win" ? "You won!" : "You lost!");
     loadWallet();
-
   } catch (err) {
     console.error(err);
     alert("Error submitting game result.");
   }
 }
 
-
 startGameBtn.onclick = startGame;
-
-
