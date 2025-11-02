@@ -206,13 +206,13 @@ button:hover {
   z-index: 5;
 }
 
-/*#timerFill {
+#timerFill {
   height: 100%;
   width: 100%;
   background: linear-gradient(to right, #ffcc00, #ff5500);
   box-shadow: 0 0 8px #ffcc00;
   transition: none !important;
-}*/
+}
 
 
 /* === OVERLAY === */
@@ -266,6 +266,7 @@ button:hover {
 
 
 }
+
 
 
 
