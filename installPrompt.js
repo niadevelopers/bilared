@@ -1,23 +1,20 @@
- // public/installPrompt.js
 window.addEventListener('load', () => {
   let deferredPrompt = null;
 
-  // Only show prompt if not previously installed
   if (window.matchMedia('(display-mode: standalone)').matches || localStorage.getItem('pwaInstalled')) {
-    return; // Already installed
+    return; 
   }
 
-  // Listen for the beforeinstallprompt event
   window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); // Prevent automatic prompt
+    e.preventDefault(); 
     deferredPrompt = e;
 
-    // Show our custom prompt after 3.5 seconds
+  
     setTimeout(showCustomInstallPrompt, 3500);
   });
 
   function showCustomInstallPrompt() {
-    // Create overlay div
+    
     const overlay = document.createElement('div');
     overlay.id = 'pwa-install-overlay';
     Object.assign(overlay.style, {
@@ -33,7 +30,7 @@ window.addEventListener('load', () => {
       zIndex: '9999'
     });
 
-    // Create prompt box
+   
     const box = document.createElement('div');
     Object.assign(box.style, {
       backgroundColor: '#49cbf2ff',
@@ -46,7 +43,7 @@ window.addEventListener('load', () => {
       fontFamily: 'Arial, sans-serif'
     });
 
-    // Add content
+    
     const title = document.createElement('h2');
     title.innerText = 'Install Our App?';
     title.style.marginBottom = '12px';
@@ -54,7 +51,6 @@ window.addEventListener('load', () => {
     message.innerText = 'Get quick access by installing this app on your device.';
     message.style.marginBottom = '20px';
     
-    // Buttons
     const btnInstall = document.createElement('button');
     btnInstall.innerText = 'Install';
     Object.assign(btnInstall.style, {
@@ -78,11 +74,10 @@ window.addEventListener('load', () => {
       cursor: 'pointer'
     });
 
-    // Button logic
     btnInstall.addEventListener('click', async () => {
       overlay.remove();
       if (deferredPrompt) {
-        deferredPrompt.prompt(); // Show native install prompt
+        deferredPrompt.prompt();
         const choiceResult = await deferredPrompt.userChoice;
         if (choiceResult.outcome === 'accepted') {
           console.log('PWA installed');
@@ -97,7 +92,6 @@ window.addEventListener('load', () => {
       console.log('User dismissed install prompt');
     });
 
-    // Append elements
     box.appendChild(title);
     box.appendChild(message);
     box.appendChild(btnInstall);
@@ -106,7 +100,7 @@ window.addEventListener('load', () => {
     document.body.appendChild(overlay);
   }
 
-  // Detect if user installed PWA via native prompt (some browsers)
+ 
   window.addEventListener('appinstalled', () => {
     console.log('PWA was installed');
     localStorage.setItem('pwaInstalled', 'true');
