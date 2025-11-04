@@ -5,10 +5,6 @@ import Withdraw from "../models/Withdraw.js";
 
 const router = express.Router();
 
-//router.get("/balance", protect, async (req, res) => {
- // res.json(req.user.wallet);
-//});
-
 router.get("/balance", protect, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Not authorized" });
@@ -27,8 +23,6 @@ router.get("/balance", protect, async (req, res) => {
     res.status(500).json({ message: "Server error", balance: 0, available: 0, locked: 0 });
   }
 });
-
-
 
 router.post("/withdraw", protect, async (req, res) => {
   const { name, email, phone } = req.body;
@@ -56,3 +50,4 @@ router.post("/withdraw", protect, async (req, res) => {
 });
 
 export default router;
+
