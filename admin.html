@@ -1,11 +1,19 @@
-<!-- admin.html (minimal) -->
+
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>Admin - Withdraws</title></head>
+<head>
+  <meta charset="utf-8"><title>Withdrawals</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/images/cat.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/cat.png">
+<meta name="theme-color" content="#000000"></meta>
+  
+</head>
 <body>
-  <h1>Pending Withdraws</h1>
+  <h1>Pending Withdrawals</h1>
   <div>
-    <label>Admin Token:</label>
+    <label>Admin</label>
     <input id="adminToken" style="width:60%" />
     <button id="btnLoad">Load</button>
   </div>
@@ -34,7 +42,7 @@ document.getElementById("btnLoad").onclick = async () => {
     wrap.appendChild(div);
   });
 
-  // attach handlers
+  
   wrap.querySelectorAll(".approve").forEach(b => b.onclick = async e => {
     const id = e.target.dataset.id;
     await fetch(`${API_BASE}/admin/withdraws/${id}/approve`, {
@@ -72,4 +80,5 @@ document.getElementById("btnLoad").onclick = async () => {
 </script>
 </body>
 </html>
+
 
