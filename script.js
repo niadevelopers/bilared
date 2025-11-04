@@ -2,9 +2,7 @@ const API_BASE = "/api";
 let token = localStorage.getItem("token");
 let user = null;
 
-/* ---------------------------
-   DOM ELEMENTS
----------------------------- */
+
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const username = document.getElementById("username");
@@ -31,19 +29,14 @@ const submitWithdraw = document.getElementById("submitWithdraw");
 
 if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
 
-/* ---------------------------
-   AUTH FUNCTIONS (UPDATED)
----------------------------- */
 
-// Utility: sanitize input (remove potential XSS and spaces)
 function sanitizeInput(value) {
   return value
-    .replace(/<[^>]*>?/gm, "")  // remove HTML tags
-    .replace(/[{}<>;$]/g, "")   // remove code-like chars
+    .replace(/<[^>]*>?/gm, "")  
+    .replace(/[{}<>;$]/g, "")  
     .trim();
 }
 
-// Utility: show error messages dynamically
 function showError(input, message) {
   let errorEl = input.nextElementSibling;
   if (!errorEl || !errorEl.classList.contains("error-msg")) {
@@ -57,12 +50,10 @@ function showError(input, message) {
   errorEl.textContent = message;
 }
 
-// Utility: clear existing errors
 function clearErrors() {
   document.querySelectorAll(".error-msg").forEach((el) => el.remove());
 }
 
-// Validation helper functions
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email) return "Email is required.";
@@ -90,16 +81,13 @@ function validateUsername(username) {
   return "";
 }
 
-// ============================
-// LOGIN FUNCTION (Validated)
-// ============================
+
 async function login() {
   clearErrors();
 
   const emailVal = sanitizeInput(email.value);
   const passwordVal = sanitizeInput(password.value);
 
-  // Validation checks
   const emailMsg = validateEmail(emailVal);
   const passwordMsg = validatePassword(passwordVal);
 
@@ -136,9 +124,7 @@ async function login() {
   }
 }
 
-// ============================
-// REGISTER FUNCTION (Validated)
-// ============================
+
 async function register() {
   clearErrors();
 
@@ -146,7 +132,6 @@ async function register() {
   const emailVal = sanitizeInput(email.value);
   const passwordVal = sanitizeInput(password.value);
 
-  // Validation checks
   const usernameMsg = validateUsername(usernameVal);
   const emailMsg = validateEmail(emailVal);
   const passwordMsg = validatePassword(passwordVal);
@@ -187,9 +172,7 @@ async function register() {
   }
 }
 
-// ============================
-// EVENT LISTENERS
-// ============================
+
 loginBtn.onclick = login;
 registerBtn.onclick = register;
 
@@ -203,9 +186,7 @@ logoutBtn.onclick = () => {
   if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
 };
 
-/* ---------------------------
-   INITIAL PAGE LOGIC
----------------------------- */
+
 window.addEventListener("DOMContentLoaded", () => {
   if (!token) {
     authSection.classList.remove("hidden");
@@ -218,9 +199,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* ---------------------------
-   WALLET FUNCTIONS
----------------------------- */
+
 async function loadWallet() {
   try {
     const res = await fetch(`${API_BASE}/wallet/balance`, {
@@ -235,15 +214,12 @@ async function loadWallet() {
 
     const data = await res.json();
     
-    // Grab elements if they exist
     const balanceEl = document.getElementById("balance");
     const availableEl = document.getElementById("available");
     const lockedEl = document.getElementById("locked");
 
-    // Display available balance always
     if (availableEl) availableEl.textContent = Number(data.available || 0).toFixed(2);
 
-    // Optional: display balance and locked only if elements exist
     if (balanceEl) balanceEl.textContent = Number(data.balance || 0).toFixed(2);
     if (lockedEl) lockedEl.textContent = Number(data.locked || 0).toFixed(2);
 
@@ -252,39 +228,34 @@ async function loadWallet() {
   }
 }
 
-// Auto-refresh wallet every 10 seconds
 setInterval(loadWallet, 10000);
 loadWallet();
 
 
-/* ---------------------------
-   DEPOSIT FUNCTION
----------------------------- */
+
 depositBtn.onclick = async () => {
   if (!token) {
-    alert("⚠️ Please log in to continue.");
+    alert("Please log in to continue.");
     return;
   }
 
-  const amountInput = prompt("💰 Enter deposit amount (KES):");
+  const amountInput = prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
 
-  // Validate entered amount
   if (!amountInput || isNaN(amount)) {
-    return alert("❌ Please enter a valid numeric amount.");
+    return alert("Please enter a valid numeric amount.");
   }
 
-  // Check minimum and maximum limits
   if (amount < 100) {
-    return alert("⚠️ Minimum deposit is KSh 100. Please enter KSh 100 or more.");
+    return alert("Minimum deposit is KSh 100. Please enter KSh 100 or more.");
   }
   if (amount > 150000) {
-    return alert("⚠️ Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
+    return alert("Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
   }
 
-  const payerEmail = prompt("📧 Enter your email for this deposit:");
+  const payerEmail = prompt("Enter your email for this deposit:");
   if (!payerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
-    return alert("❌ Please enter a valid email address.");
+    return alert("Please enter a valid email address.");
   }
 
   try {
@@ -300,41 +271,33 @@ depositBtn.onclick = async () => {
     const data = await res.json();
 
     if (!data.status) {
-      return alert(`⚠️ Payment initialization failed: ${data.message}`);
+      return alert(`Payment initialization failed: ${data.message}`);
     }
 
-    // Initialize Paystack
     const handler = PaystackPop.setup({
       key: "pk_live_8b79c89f1bc7cd80a6b24d0d18bd580f49e9c646",
       email: payerEmail,
-      amount: Math.round(amount * 100), // Convert to kobo
+      amount: Math.round(amount * 100), 
       currency: "KES",
       reference: data.data.reference,
       callback: function () {
-        alert("✅ Deposit successful! Your wallet will update shortly.");
+        alert("Deposit successful! Your wallet will update shortly.");
         setTimeout(loadWallet, 2000);
       },
       onClose: function () {
-        alert("💡 Deposit window closed. No transaction was made.");
+        alert("Deposit window closed. No transaction was made.");
       },
     });
 
     handler.openIframe();
   } catch (err) {
     console.error("Deposit error:", err);
-    alert("❌ Failed to initialize deposit. Please check your connection or try again later.");
+    alert("Failed to initialize deposit. Please check your connection or try again later.");
   }
 };
 
-
-/* ---------------------------
-   WITHDRAW FUNCTION
----------------------------- */
-/* ---------------------------
-   WITHDRAW FUNCTION
----------------------------- */
 withdrawBtn.onclick = () => {
-  if (!token) return alert("⚠️ Please login first.");
+  if (!token) return alert("Please login first.");
   withdrawOverlay.classList.remove("hidden");
 };
 
@@ -346,19 +309,18 @@ submitWithdraw.onclick = async () => {
   const phone = document.getElementById("wPhone").value.trim();
 
   if (!name || !wemail || !phone) {
-    return alert("❌ Please fill all withdrawal fields.");
+    return alert("Please fill all withdrawal fields.");
   }
 
-  // ✅ Check available balance
   const availableEl = document.getElementById("available");
   const availableBalance = parseFloat(availableEl.textContent.replace(/,/g, ""));
   
   if (isNaN(availableBalance)) {
-    return alert("⚠️ Unable to read your available balance.");
+    return alert("Unable to read your available balance.");
   }
 
   if (availableBalance < 200) {
-    return alert("⚠️ Minimum withdrawal amount is KSh 200. You cannot withdraw below this limit.");
+    return alert("Minimum withdrawal amount is KSh 200. You cannot withdraw below this limit.");
   }
 
   try {
@@ -372,17 +334,15 @@ submitWithdraw.onclick = async () => {
     });
 
     const data = await res.json();
-    alert(data.message || "✅ Withdrawal submitted for review.");
+    alert(data.message || "Withdrawal submitted for review.");
     withdrawOverlay.classList.add("hidden");
     loadWallet();
   } catch (err) {
     console.error("Withdraw error:", err);
-    alert("❌ Withdrawal request failed. Please try again.");
+    alert("Withdrawal request failed. Please try again.");
   }
 };
 
-
-/* ----- GAME LOGIC----- */ 
 let gameRunning = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
@@ -396,7 +356,6 @@ let touchStart = null;
 let baseSpeed = 1.5;
 let safeZoneRadius = 150;
 
-/* ----- AUDIO SETUP ----- */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playTokenSound() {
@@ -449,7 +408,6 @@ function playLoseSound() {
   }
 }
 
-/* Utility helpers */
 function random(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -457,7 +415,6 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/* Setup game environment */
 function setupGame() {
   arena.width = window.innerWidth;
   arena.height = window.innerHeight - 120;
@@ -510,17 +467,12 @@ function setupGame() {
       glowPhase: 0,
     });
   }
-
-  //console.log(
-    //`Device: ${isAndroid || isMobile ? "Android" : "Desktop"} | Red Balls: ${numHazards} | Green Balls: ${numTokens}`
- // );
 }
 
-/* Draw all game elements */
 function draw() {
   ctx.clearRect(0, 0, arena.width, arena.height);
 
-  // Tokens
+  
   ctx.fillStyle = "lime";
   tokens.forEach((t) => {
     if (!t.collected) {
@@ -530,7 +482,6 @@ function draw() {
     }
   });
 
-  // Hazards
   hazards.forEach((h) => {
     if (h.chase) {
       h.glowPhase += 0.1;
@@ -546,14 +497,12 @@ function draw() {
     ctx.shadowBlur = 0;
   });
 
-  // Player
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 }
 
-/* Update movement, collisions, and logic */
 function update() {
   if (!dragActive) {
     player.vx *= 0.92;
@@ -600,30 +549,26 @@ function update() {
     if (h.y < h.r || h.y > arena.height - h.r) h.dy *= -1;
   });
 
-  // Token collection
   tokens.forEach((t) => {
     if (!t.collected && distance(player, t) < player.r + t.r) {
       t.collected = true;
-      playTokenSound(); // <-- Play token sound
+      playTokenSound(); 
     }
   });
 
-  // Hazard collision
   hazards.forEach((h) => {
     if (distance(player, h) < player.r + h.r) {
-      playHazardSound(); // <-- Play hazard collision
+      playHazardSound(); // 
       endGame("lose");
     }
   });
 
-  // Win condition
   if (tokens.every((t) => t.collected)) {
-    playWinSound(); // <-- Play win sound
+    playWinSound(); // 
     endGame("win");
   }
 }
 
-/* Game loop */
 function gameLoop() {
   if (!gameRunning) return;
   draw();
@@ -631,13 +576,12 @@ function gameLoop() {
   timer -= 1 / 60;
   timerFill.style.width = `${(timer / totalTime) * 100}%`;
   if (timer <= 0) {
-    playLoseSound(); // <-- Timer ran out
+    playLoseSound(); 
     endGame("lose");
   }
   requestAnimationFrame(gameLoop);
 }
 
-/* ----- TOUCH DRAG CONTROL (high responsiveness with momentum) ----- */
 arena.addEventListener("touchstart", (e) => {
   if (!gameRunning) return;
   e.preventDefault();
@@ -678,7 +622,6 @@ arena.addEventListener("touchend", () => {
   player.vy = 0;
 });
 
-/* Laptop / mouse control */
 arena.addEventListener("mousemove", (e) => {
   if (!gameRunning) return;
   const rect = arena.getBoundingClientRect();
@@ -688,7 +631,6 @@ arena.addEventListener("mousemove", (e) => {
   player.y += (my - player.y) * 0.1;
 });
 
-/* Countdown before game begins */
 function showCountdown(seconds, callback) {
   const overlay = document.createElement("div");
   Object.assign(overlay.style, {
@@ -722,7 +664,6 @@ function showCountdown(seconds, callback) {
   }, 1000);
 }
 
-/* Start game */
 async function startGame() {
   if (!token) return alert("Please login first.");
   const stake = parseInt(stakeAmount.value);
@@ -755,7 +696,6 @@ async function startGame() {
   }
 }
 
-/* End game */
 async function endGame(result) {
   if (!gameRunning) return;
   gameRunning = false;
@@ -777,5 +717,6 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
 
 
