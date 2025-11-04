@@ -4,8 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Bilared Lounge Edition</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/images/cat.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/cat.png">
+<meta name="theme-color" content="#000000"></meta>
 <style>
-  /* ===== Reset & base ===== */
+  
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
@@ -19,7 +24,6 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* ===== Particles canvas fills background ===== */
   #particles {
     position:fixed;
     inset:0;
@@ -27,7 +31,6 @@
     pointer-events:none;
   }
 
-  /* ===== Container ===== */
   .wrap {
     position:relative;
     width:100%;
@@ -39,7 +42,6 @@
     z-index:5;
   }
 
-  /* backdrop glow */
   .backdrop {
     position: absolute;
     inset: 0;
@@ -52,7 +54,6 @@
     pointer-events:none;
   }
 
-  /* ===== Card ===== */
   .card {
     position:relative;
     width:min(92vw,720px);
@@ -68,7 +69,6 @@
     overflow: visible;
   }
 
-  /* top header row */
   .card-header {
     display:flex;
     align-items:center;
@@ -107,7 +107,6 @@
     opacity:0.95;
   }
 
-  /* progress bar */
   .progress-bar {
     margin-top:18px;
     height:8px;
@@ -124,7 +123,6 @@
     transition: width 520ms cubic-bezier(.2,.9,.2,1);
   }
 
-  /* body content */
   .card-body{
     margin-top:18px;
     font-size:1rem;
@@ -143,7 +141,7 @@
     font-size:0.95rem;
   }
 
-  /* controls row */
+  
   .controls {
     display:flex;
     justify-content:space-between;
@@ -173,9 +171,9 @@
 
   .ctrls {
   display: flex;
-  flex-wrap: wrap;      /* allow buttons to wrap on small screens */
+  flex-wrap: wrap;     
   gap: 10px;
-  justify-content: flex-end; /* keep them aligned nicely */
+  justify-content: flex-end; 
 }
 
  .btn {
@@ -205,7 +203,7 @@
     margin-top:12px;text-align:center;color:#9fbfc0;font-size:0.92rem;
   }
 
-  /* fancy small animation on next click */
+ 
   .pulse {
     animation: pulse 420ms ease;
   }
@@ -215,7 +213,7 @@
     100%{transform:scale(1)}
   }
 
-  /* responsive */
+  
   @media (max-width:640px){
     .card{width:94vw;padding:18px;border-radius:12px}
     .badge{min-width:44px;height:44px;font-size:0.98rem}
@@ -264,9 +262,7 @@
   </div>
 
 <script>
-/* =======================
-   Tutorial content (ordered)
-   ======================= */
+
 const STEPS = [
   {
     title: "Register",
@@ -306,7 +302,7 @@ const STEPS = [
   }
 ];
 
-/* DOM refs */
+
 const badge = document.getElementById('stepBadge');
 const titleEl = document.getElementById('cardTitle');
 const subEl = document.getElementById('cardSub');
@@ -320,7 +316,7 @@ const progressFill = document.getElementById('progressFill');
 let idx = 0;
 let audioStarted = false;
 
-/* ==== Build dots ==== */
+
 function buildDots(){
   dotsEl.innerHTML = '';
   for(let i=0;i<STEPS.length;i++){
@@ -335,7 +331,7 @@ function buildDots(){
 }
 buildDots();
 
-/* ==== Render step ==== */
+
 function render(i, opts={animate:true}){
   if(i<0)i=0;
   if(i>=STEPS.length)i=STEPS.length-1;
@@ -347,14 +343,14 @@ function render(i, opts={animate:true}){
   subEl.textContent = s.sub;
   bodyEl.innerHTML = s.html;
 
-  // dots
+ 
   Array.from(dotsEl.children).forEach((d,ii)=> d.classList.toggle('active', ii===i));
 
-  // progress
+  
   const pct = Math.round(((i+1)/STEPS.length)*100);
   progressFill.style.width = pct + '%';
 
-  // buttons
+  
   backBtn.disabled = (i===0);
   if(i === STEPS.length-1){
     nextBtn.textContent = 'Go to Game';
@@ -366,17 +362,17 @@ function render(i, opts={animate:true}){
     skipBtn.style.display='inline-block';
   }
 
-  // visual micro effect
+  
   nextBtn.classList.add('pulse');
   setTimeout(()=> nextBtn.classList.remove('pulse'), 420);
 }
 
-/* ==== navigation ==== */
+
 function goTo(i){
   render(i);
 }
 
-/* ==== keyboard support ==== */
+
 document.addEventListener('keydown', (e)=>{
   if(e.key === 'ArrowRight') {
     if(idx < STEPS.length-1) { playClick(); goTo(idx+1); }
@@ -390,17 +386,17 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 
-/* buttons */
+
 backBtn.addEventListener('click', ()=> { playBack(); if(idx>0) goTo(idx-1); });
 skipBtn.addEventListener('click', ()=> { playClick(); goTo(STEPS.length-1); });
 
-/* ==== Particles (soft floating chips/sparkles) ==== */
+
 const canvas = document.getElementById('particles');
 const ctx = canvas.getContext('2d');
 let W = canvas.width = innerWidth;
 let H = canvas.height = innerHeight;
 const particles = [];
-const P_COUNT = Math.round((W*H)/90000); // scale with screen
+const P_COUNT = Math.round((W*H)/90000); 
 for(let i=0;i<P_COUNT;i++){
   particles.push({
     x: Math.random()*W,
@@ -426,7 +422,7 @@ function drawParticles(){
     ctx.globalAlpha = p.alpha;
     ctx.translate(p.x,p.y);
     ctx.rotate(p.rot);
-    // draw a soft chip/sparkle
+    
     const grd = ctx.createLinearGradient(-p.r,-p.r,p.r,p.r);
     grd.addColorStop(0, 'rgba(255,230,140,0.08)');
     grd.addColorStop(1, 'rgba(0,220,200,0.06)');
@@ -444,7 +440,7 @@ function loopParticles(){
 loopParticles();
 window.addEventListener('resize', ()=>{ W = canvas.width = innerWidth; H = canvas.height = innerHeight; });
 
-/* ==== Audio: Luxury lounge ambient + click chime (synthesized) ==== */
+
 let audioCtx, masterGain, ambientGain;
 let ambientOsc1, ambientOsc2, ambientFilter;
 let chimeOsc1, chimeOsc2;
@@ -457,14 +453,14 @@ function initAudio(){
   masterGain.gain.value = 0.9;
   masterGain.connect(audioCtx.destination);
 
-  // Ambient pad (two oscillators + lowpass + smooth fade)
+  
   ambientGain = audioCtx.createGain();
   ambientGain.gain.value = 0.0;
   ambientGain.connect(masterGain);
 
   ambientOsc1 = audioCtx.createOscillator();
   ambientOsc1.type = 'sine';
-  ambientOsc1.frequency.value = 60; // low
+  ambientOsc1.frequency.value = 60; 
   ambientOsc2 = audioCtx.createOscillator();
   ambientOsc2.type = 'triangle';
   ambientOsc2.frequency.value = 90;
@@ -481,26 +477,25 @@ function initAudio(){
   ambientOsc1.start();
   ambientOsc2.start();
 
-  // gentle fade-in
+ 
   ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
   ambientGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
   ambientGain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 1.5);
 
-  // slight movement: LFO for filter
+ 
   const lfo = audioCtx.createOscillator();
   const lfoGain = audioCtx.createGain();
   lfo.type = 'sine'; lfo.frequency.value = 0.08;
-  lfoGain.gain.value = 300; // filter frequency swing
+  lfoGain.gain.value = 300;
   lfo.connect(lfoGain);
   lfoGain.connect(ambientFilter.frequency);
   lfo.start();
 }
 
-/* chime: quick pleasant coin */
+
 function playChime(){
-  if(!audioStarted) return; // won't play until user interaction started audio
+  if(!audioStarted) return;
   const t = audioCtx.currentTime;
-  // high bell
   const o1 = audioCtx.createOscillator();
   o1.type = 'sine'; o1.frequency.setValueAtTime(880, t);
   const g1 = audioCtx.createGain(); g1.gain.setValueAtTime(0.0,t);
@@ -509,7 +504,7 @@ function playChime(){
   g1.gain.linearRampToValueAtTime(0.08,t+0.01);
   g1.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
 
-  // lower metallic body
+  
   const o2 = audioCtx.createOscillator();
   o2.type = 'triangle'; o2.frequency.setValueAtTime(440, t);
   const g2 = audioCtx.createGain(); g2.gain.setValueAtTime(0.0,t);
@@ -520,7 +515,7 @@ function playChime(){
   g2.gain.exponentialRampToValueAtTime(0.0001,t+0.6);
 }
 
-/* safe-start audio on user gesture */
+
 function safeStartAudio(){
   if(audioStarted) return;
   try{
@@ -530,17 +525,15 @@ function safeStartAudio(){
   }
 }
 
-/* play click/advance chime and small vibration if supported */
 function playClick(){
   safeStartAudio();
   playChime();
   if(navigator.vibrate) navigator.vibrate(20);
 }
 
-/* play back (soft sound on back) */
 function playBack(){
   safeStartAudio();
-  // gentler lower tick
+ 
   if(!audioStarted) return;
   const t = audioCtx.currentTime;
   const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(300,t);
@@ -551,22 +544,18 @@ function playBack(){
   g.gain.exponentialRampToValueAtTime(0.0001, t+0.28);
 }
 
-/* ==== Initialize UI ==== */
-render(0); // initial render
+render(0); 
 
-/* initial event: first interaction to unlock audio */
 document.addEventListener('pointerdown', function once(){
   safeStartAudio();
   document.removeEventListener('pointerdown', once);
 });
 
-/* ensure focus on body area for key navigation */
 bodyEl = document.getElementById('cardBody');
 bodyEl && bodyEl.focus();
 
-/* expose render function for navigation & button logic (closure) */
 function render(i){
-  // clamp
+ 
   if(i<0) i=0;
   if(i>STEPS.length-1) i=STEPS.length-1;
   idx = i;
@@ -576,14 +565,11 @@ function render(i){
   subEl.textContent = s.sub;
   bodyEl.innerHTML = s.html;
 
-  // update dots
   Array.from(dotsEl.children).forEach((d,ii)=> d.classList.toggle('active', ii===i));
 
-  // progress animate
   const pct = Math.round(((i+1)/STEPS.length)*100);
   progressFill.style.width = pct + '%';
 
-  // buttons
   backBtn.disabled = (i===0);
   if(i === STEPS.length-1){
     nextBtn.textContent = 'Go to Game';
@@ -595,23 +581,19 @@ function render(i){
     skipBtn.style.display = 'inline-block';
   }
 
-  // micro pulse
   nextBtn.classList.add('pulse');
   setTimeout(()=> nextBtn.classList.remove('pulse'), 420);
 }
 
-/* hookup other buttons */
 backBtn.addEventListener('click', ()=> { playBack(); if(idx>0) render(idx-1); });
 skipBtn.addEventListener('click', ()=> { playClick(); render(STEPS.length-1); });
 
-/* keyboard nav */
 document.addEventListener('keydown', (e)=>{
   if(e.key === 'ArrowRight'){ if(idx<STEPS.length-1){ playClick(); render(idx+1);} else { window.location.href='index.html'; } }
   if(e.key === 'ArrowLeft'){ if(idx>0){ playBack(); render(idx-1);} }
   if(e.key === 'Escape'){ render(STEPS.length-1); }
 });
 
-/* ensure dots exist (we referenced earlier before build) */
 (function ensureDots(){
   if(dotsEl.children.length === 0) buildDots();
   function buildDots(){
@@ -628,9 +610,9 @@ document.addEventListener('keydown', (e)=>{
   }
 })();
 
-/* small accessibility: focus first interactive */
 setTimeout(()=> { const btn = document.getElementById('nextBtn'); btn && btn.focus(); }, 600);
 </script>
 </body>
 </html>
+
 
