@@ -3,20 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skill-Based Casino</title>
+  <title>Bilared Game</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#e60023">
   <script src="https://js.paystack.co/v1/inline.js"></script>
 
-<!-- Favicon for Browser Tabs -->
 <link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/images/cat.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/images/cat.png">
 <meta name="theme-color" content="#000000"></meta>
 
 
-  <!-- Open Graph Meta Tags -->
 <meta property="og:title" content="Bilared — Play Smart. Win Real. The Skill-Based Casino That Pays You Back." />
 <meta property="og:description" content="It’s not luck — it’s skill. Real players. Real money. And every round you skip is a win you just gave away." />
 <meta property="og:image" content="https://bilared.onrender.com/images/cat.png" />
@@ -26,22 +24,17 @@
 <meta property="og:url" content="https://bilared.onrender.com" />
 <meta property="og:type" content="website" />
 
-<!-- Optional: Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Bilared — Play Smart. Win Real. The Skill-Based Casino That Pays You Back." />
 <meta name="twitter:description" content="It’s not luck — it’s skill. Real players. Real money. And every round you skip is a win you just gave away." />
 <meta name="twitter:image" content="https://bilared.onrender.com/images/cat.png" />
 
-<!-- Fallback -->
 <meta name="description" content="It’s not luck — it’s skill. Real players. Real money. And every round you skip is a win you just gave away _ Bilared." />
 
-  
   <style>
   .hidden {
     display: none !important;
   }
-
-
 
 </style>
 
@@ -71,28 +64,22 @@
     <button id="registerBtn">Register</button>
   </div>
 
-
   <div class="disclaimer-notice">
   <p>
-    ⚠️ Before registering, please
+     Before registering, please
     <a href="disclaimer.html" target="_blank" style="color:#0056b3; font-weight:600; text-decoration:underline;">
-      read our Skill-Based Game Disclaimer
+      read our Bilared Game Disclaimer
     </a>
     to understand our non-gambling policy.
   </p>
 </div>
 
-
   <div class="how-to-play-container">
-    <a href="how-to-play.html" class="how-to-play-link">🎮 How to Play Game</a>
+    <a href="how-to-play.html" class="how-to-play-link">How to Play Game</a>
   </div>
 </div>
 
-
-
   <div id="game-ui" class="hidden">
-   
-
 
     <header>
   <div id="currentPlayers">Current Players:296</div>
@@ -106,9 +93,6 @@
     <button id="logoutBtn">Logout</button>
   </div>
 </header>
-
-
-   
 
     <canvas id="arena"></canvas>
 
@@ -130,18 +114,16 @@
   <script src="installPrompt.js"></script>
   
   <script>
-// Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
-      .then(() => console.log('✅ Service Worker Registered'))
-      .catch(err => console.log('❌ SW registration failed:', err));
+      .then(() => console.log(' Service Worker Registered'))
+      .catch(err => console.log(' SW registration failed:', err));
   }
     
     window.addEventListener("DOMContentLoaded", () => {
   loadWallet();
 });
 
-// Dynamic player count simulation
 const playerCountEl = document.getElementById("currentPlayers");
 function updatePlayerCount() {
   const randomPlayers = Math.floor(200 + Math.random() * 250);
@@ -153,6 +135,7 @@ updatePlayerCount();
   </script>
 </body>
 </html>
+
 
 
 
