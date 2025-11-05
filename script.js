@@ -2,7 +2,6 @@ const API_BASE = "/api";
 let token = localStorage.getItem("token");
 let user = null;
 
-
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const username = document.getElementById("username");
@@ -29,12 +28,209 @@ const submitWithdraw = document.getElementById("submitWithdraw");
 
 if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
 
+(function () {
+  const style = document.createElement("style");
+  style.textContent = `
+    .custom-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .custom-modal-backdrop.show { opacity: 1; }
+
+    .custom-modal {
+      background: #fff;
+      color: #333;
+      border-radius: 12px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+      max-width: 90%;
+      width: 360px;
+      padding: 20px;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.25s ease;
+    }
+    .custom-modal-backdrop.show .custom-modal { transform: scale(1); }
+
+    .custom-modal h3 {
+      margin-bottom: 12px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .custom-modal p {
+      font-size: 15px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .custom-modal input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+    .custom-modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .custom-modal button {
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.25s;
+    }
+    .custom-modal button:hover {
+      background: #111;
+    }
+  `;
+  document.head.appendChild(style);
+
+  function createBackdrop() {
+    const backdrop = document.createElement("div");
+    backdrop.className = "custom-modal-backdrop";
+    document.body.appendChild(backdrop);
+    setTimeout(() => backdrop.classList.add("show"), 10);
+    return backdrop;
+  }
+
+  window.customAlert = function (message, title = "Notice") {
+    return new Promise((resolve) => {
+      const backdrop = createBackdrop();
+      const modal = document.createElement("div");
+      modal.className = "custom-modal";
+      modal.innerHTML = `
+        <h3>${title}</h3>
+        <p>${message}</p>
+        <div class="custom-modal-buttons">
+          <button id="okBtn">OK</button>
+        </div>
+      `;
+      backdrop.appendChild(modal);
+
+      const okBtn = modal.querySelector("#okBtn");
+      okBtn.onclick = () => {
+        backdrop.classList.remove("show");
+        setTimeout(() => backdrop.remove(), 300);
+        resolve(true);
+      };
+    });
+  };
+
+  window.customPrompt = function (message, defaultValue = "") {
+    return new Promise((resolve) => {
+      const backdrop = createBackdrop();
+      const modal = document.createElement("div");
+      modal.className = "custom-modal";
+      modal.innerHTML = `
+        <h3>Input Required</h3>
+        <p>${message}</p>
+        <input type="text" id="promptInput" value="${defaultValue}" autofocus />
+        <div class="custom-modal-buttons">
+          <button id="cancelBtn">Cancel</button>
+          <button id="okBtn">OK</button>
+        </div>
+      `;
+      backdrop.appendChild(modal);
+
+      const input = modal.querySelector("#promptInput");
+      const cancelBtn = modal.querySelector("#cancelBtn");
+      const okBtn = modal.querySelector("#okBtn");
+
+      cancelBtn.onclick = () => {
+        backdrop.classList.remove("show");
+        setTimeout(() => backdrop.remove(), 300);
+        resolve(null);
+      };
+
+      okBtn.onclick = () => {
+        const val = input.value.trim();
+        backdrop.classList.remove("show");
+        setTimeout(() => backdrop.remove(), 300);
+        resolve(val);
+      };
+
+      input.focus();
+    });
+  };
+
+  window.alert = (msg) => customAlert(msg);
+  window.prompt = (msg, def) => customPrompt(msg, def);
+})();
+
+function createLoader() {
+  const loader = document.createElement("div");
+  loader.id = "global-loader";
+  loader.innerHTML = `<div class="loader-spinner"></div>`;
+  Object.assign(loader.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(255, 255, 255, 0.1)",
+    backdropFilter: "blur(10px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: "0",
+    visibility: "hidden",
+    transition: "opacity 0.3s ease, visibility 0.3s ease",
+    zIndex: "9998",
+  });
+
+  const spinner = loader.querySelector(".loader-spinner");
+  Object.assign(spinner.style, {
+    width: "60px",
+    height: "60px",
+    border: "6px solid rgba(255,255,255,0.3)",
+    borderTopColor: "#fff",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  });
+
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes spin { 
+      0% { transform: rotate(0deg); } 
+      100% { transform: rotate(360deg); } 
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(loader);
+}
+
+function showLoader() {
+  let loader = document.getElementById("global-loader");
+  if (!loader) createLoader();
+  loader = document.getElementById("global-loader");
+  loader.style.visibility = "visible";
+  loader.style.opacity = "1";
+}
+
+function hideLoader() {
+  const loader = document.getElementById("global-loader");
+  if (loader) {
+    loader.style.opacity = "0";
+    loader.style.visibility = "hidden";
+  }
+}
 
 function sanitizeInput(value) {
-  return value
-    .replace(/<[^>]*>?/gm, "")  
-    .replace(/[{}<>;$]/g, "")  
-    .trim();
+  return value.replace(/<[^>]*>?/gm, "").replace(/[{}<>;$]/g, "").trim();
 }
 
 function showError(input, message) {
@@ -63,28 +259,21 @@ function validateEmail(email) {
 
 function validatePassword(password) {
   if (!password) return "Password is required.";
-  if (password.length < 6)
-    return "Password must be at least 6 characters long.";
-  if (!/[A-Z]/.test(password))
-    return "Password must contain at least one uppercase letter.";
-  if (!/[0-9]/.test(password))
-    return "Password must contain at least one number.";
+  if (password.length < 6) return "Password must be at least 6 characters long.";
+  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
   return "";
 }
 
 function validateUsername(username) {
   if (!username) return "Username is required.";
-  if (username.length < 3)
-    return "Username must be at least 3 characters long.";
-  if (!/^[a-zA-Z0-9_]+$/.test(username))
-    return "Username can only contain letters, numbers, and underscores.";
+  if (username.length < 3) return "Username must be at least 3 characters long.";
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return "Username can only contain letters, numbers, and underscores.";
   return "";
 }
 
-
 async function login() {
   clearErrors();
-
   const emailVal = sanitizeInput(email.value);
   const passwordVal = sanitizeInput(password.value);
 
@@ -100,6 +289,7 @@ async function login() {
     return alert(passwordMsg);
   }
 
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -121,9 +311,10 @@ async function login() {
   } catch (err) {
     console.error(err);
     alert("Login error");
+  } finally {
+    hideLoader();
   }
 }
-
 
 async function register() {
   clearErrors();
@@ -149,15 +340,12 @@ async function register() {
     return alert(passwordMsg);
   }
 
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: usernameVal,
-        email: emailVal,
-        password: passwordVal,
-      }),
+      body: JSON.stringify({ username: usernameVal, email: emailVal, password: passwordVal }),
     });
     const data = await res.json();
 
@@ -169,13 +357,13 @@ async function register() {
   } catch (err) {
     console.error(err);
     alert("Registration error");
+  } finally {
+    hideLoader();
   }
 }
 
-
 loginBtn.onclick = login;
 registerBtn.onclick = register;
-
 
 logoutBtn.onclick = () => {
   localStorage.clear();
@@ -185,7 +373,6 @@ logoutBtn.onclick = () => {
   gameUI.classList.add("hidden");
   if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
 };
-
 
 window.addEventListener("DOMContentLoaded", () => {
   if (!token) {
@@ -198,7 +385,6 @@ window.addEventListener("DOMContentLoaded", () => {
     loadWallet();
   }
 });
-
 
 async function loadWallet() {
   try {
@@ -213,16 +399,9 @@ async function loadWallet() {
     }
 
     const data = await res.json();
-    
-    const balanceEl = document.getElementById("balance");
-    const availableEl = document.getElementById("available");
-    const lockedEl = document.getElementById("locked");
-
     if (availableEl) availableEl.textContent = Number(data.available || 0).toFixed(2);
-
     if (balanceEl) balanceEl.textContent = Number(data.balance || 0).toFixed(2);
     if (lockedEl) lockedEl.textContent = Number(data.locked || 0).toFixed(2);
-
   } catch (err) {
     console.error("Wallet load error:", err);
   }
@@ -231,33 +410,23 @@ async function loadWallet() {
 setInterval(loadWallet, 10000);
 loadWallet();
 
-
-
 depositBtn.onclick = async () => {
   if (!token) {
     alert("Please log in to continue.");
     return;
   }
 
-  const amountInput = prompt("Enter deposit amount (KES):");
+  const amountInput = await prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
 
-  if (!amountInput || isNaN(amount)) {
-    return alert("Please enter a valid numeric amount.");
-  }
+  if (!amountInput || isNaN(amount)) return alert("Please enter a valid numeric amount.");
+  if (amount < 100) return alert("Minimum deposit is KSh 100. Please enter KSh 100 or more.");
+  if (amount > 150000) return alert("Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
 
-  if (amount < 100) {
-    return alert("Minimum deposit is KSh 100. Please enter KSh 100 or more.");
-  }
-  if (amount > 150000) {
-    return alert("Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
-  }
+  const payerEmail = await prompt("Enter your email for this deposit:");
+  if (!payerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) return alert("Please enter a valid email address.");
 
-  const payerEmail = prompt("Enter your email for this deposit:");
-  if (!payerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
-    return alert("Please enter a valid email address.");
-  }
-
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/paystack/initiate`, {
       method: "POST",
@@ -270,14 +439,12 @@ depositBtn.onclick = async () => {
 
     const data = await res.json();
 
-    if (!data.status) {
-      return alert(`Payment initialization failed: ${data.message}`);
-    }
+    if (!data.status) return alert(`Payment initialization failed: ${data.message}`);
 
     const handler = PaystackPop.setup({
       key: "pk_live_8b79c89f1bc7cd80a6b24d0d18bd580f49e9c646",
       email: payerEmail,
-      amount: Math.round(amount * 100), 
+      amount: Math.round(amount * 100),
       currency: "KES",
       reference: data.data.reference,
       callback: function () {
@@ -293,6 +460,8 @@ depositBtn.onclick = async () => {
   } catch (err) {
     console.error("Deposit error:", err);
     alert("Failed to initialize deposit. Please check your connection or try again later.");
+  } finally {
+    hideLoader();
   }
 };
 
@@ -308,21 +477,15 @@ submitWithdraw.onclick = async () => {
   const wemail = document.getElementById("wEmail").value.trim();
   const phone = document.getElementById("wPhone").value.trim();
 
-  if (!name || !wemail || !phone) {
-    return alert("Please fill all withdrawal fields.");
-  }
+  if (!name || !wemail || !phone) return alert("Please fill all withdrawal fields.");
 
   const availableEl = document.getElementById("available");
   const availableBalance = parseFloat(availableEl.textContent.replace(/,/g, ""));
-  
-  if (isNaN(availableBalance)) {
-    return alert("Unable to read your available balance.");
-  }
 
-  if (availableBalance < 200) {
-    return alert("Minimum withdrawal amount is KSh 200. You cannot withdraw below this limit.");
-  }
+  if (isNaN(availableBalance)) return alert("Unable to read your available balance.");
+  if (availableBalance < 200) return alert("Minimum withdrawal amount is KSh 200. You cannot withdraw below this limit.");
 
+  showLoader();
   try {
     const res = await fetch(`${API_BASE}/wallet/withdraw`, {
       method: "POST",
@@ -340,6 +503,8 @@ submitWithdraw.onclick = async () => {
   } catch (err) {
     console.error("Withdraw error:", err);
     alert("Withdrawal request failed. Please try again.");
+  } finally {
+    hideLoader();
   }
 };
 
@@ -355,6 +520,7 @@ let dragActive = false;
 let touchStart = null;
 let baseSpeed = 1.5;
 let safeZoneRadius = 150;
+let lastFrameTime = null; //added for time tracking
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -428,11 +594,11 @@ function setupGame() {
 
   let numHazards, numTokens;
   if (isAndroid || isMobile) {
-    numHazards = 5;  
-    numTokens = 8;   
+    numHazards = 5;
+    numTokens = 8;
   } else {
-    numHazards = 9;  
-    numTokens = 12;  
+    numHazards = 9;
+    numTokens = 12;
   }
 
   tokens = [];
@@ -472,7 +638,6 @@ function setupGame() {
 function draw() {
   ctx.clearRect(0, 0, arena.width, arena.height);
 
-  
   ctx.fillStyle = "lime";
   tokens.forEach((t) => {
     if (!t.collected) {
@@ -552,34 +717,43 @@ function update() {
   tokens.forEach((t) => {
     if (!t.collected && distance(player, t) < player.r + t.r) {
       t.collected = true;
-      playTokenSound(); 
+      playTokenSound();
     }
   });
 
   hazards.forEach((h) => {
     if (distance(player, h) < player.r + h.r) {
-      playHazardSound(); // 
+      playHazardSound();
       endGame("lose");
     }
   });
 
   if (tokens.every((t) => t.collected)) {
-    playWinSound(); // 
+    playWinSound();
     endGame("win");
   }
 }
 
-function gameLoop() {
+function gameLoop(timestamp) {
   if (!gameRunning) return;
+
+  if (lastFrameTime === null) lastFrameTime = timestamp;
+  const delta = (timestamp - lastFrameTime) / 1000;
+  lastFrameTime = timestamp;
+
   draw();
   update();
-  timer -= 1 / 60;
-  timerFill.style.width = `${(timer / totalTime) * 100}%`;
+
+  timer -= delta;
+  timerFill.style.width = `${Math.max(0, (timer / totalTime) * 100)}%`;
+
   if (timer <= 0) {
-    playLoseSound(); 
+    playLoseSound();
     endGame("lose");
+    lastFrameTime = null;
+  } else {
+    requestAnimationFrame(gameLoop);
   }
-  requestAnimationFrame(gameLoop);
 }
 
 arena.addEventListener("touchstart", (e) => {
@@ -687,7 +861,8 @@ async function startGame() {
         timer = 30;
         totalTime = 30;
         gameRunning = true;
-        gameLoop();
+        lastFrameTime = null;
+        requestAnimationFrame(gameLoop);
       });
     } else alert(data.message || "Could not start session");
   } catch (err) {
@@ -717,6 +892,3 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
-
-
-
