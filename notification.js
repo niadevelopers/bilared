@@ -20,7 +20,7 @@ const messages = [
   }
 ];
 
-let messagePool = shuffle([...messages]); // random initial order
+let messagePool = shuffle([...messages]);
 
 function getNextMessage() {
   if (messagePool.length === 0) messagePool = shuffle([...messages]);
@@ -95,7 +95,7 @@ function buildModalHTML(innerText) {
       Share Now
     </button>
     <small id="shareHint" style="display:none; margin-top:8px; text-align:center; font-size:12px; color:#aaa;">
-      Sharing window opened — complete the share to stand a chance!
+      Share window opened — complete the share to stand a chance!
     </small>
   `;
 }
@@ -129,10 +129,9 @@ function attachShareHandler(shareText) {
     idTag.dataset.idTag = "true";
     notifyModal.appendChild(idTag);
 
-    // Prepare message with ID appended subtly
     const shareData = {
       title: "BilaRed – Skill-Based Fun",
-      text: `${shareText}  ...ref: ${randomId}`,
+      text: `${shareText}  ...referrer: ${randomId}`,
       url: window.location.origin,
     };
 
