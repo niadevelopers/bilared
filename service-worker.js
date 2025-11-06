@@ -9,7 +9,7 @@ const urlsToCache = [
   "/howToPlay.js",
   "/installPrompt.js",
   "/playerCount.js",
-  "/notification.js"
+  "/notification.js",
   "/images/cat.png",
   "/images/cat-blue.png"
 ];
