@@ -38,7 +38,45 @@
 
 </style>
 
+  <style>
+  .hidden {
+    display: none !important;
+  }
+
+  .notification-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 15px;
+  }
+
+  .bell-wrapper {
+    position: relative;
+    font-size: 22px;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.2s ease;
+  }
+
+  .bell-wrapper:hover {
+    transform: scale(1.1);
+  }
+
+  .badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  </style>
 </head>
+
 <body>
 
 <div id="auth-section">
@@ -65,57 +103,142 @@
   </div>
 
   <div class="disclaimer-notice">
-  <p>
-     Before registering, please
-    <a href="disclaimer.html" target="_blank" style="color:#0056b3; font-weight:600; text-decoration:underline;">
-      read our Bilared Game Disclaimer
-    </a>
-    to understand our non-gambling policy.
-  </p>
-</div>
+    <p>
+      Before registering, please
+      <a href="disclaimer.html" target="_blank" style="color:#0056b3; font-weight:600; text-decoration:underline;">
+        read our Skill-Based Game Disclaimer
+      </a>
+      to understand our non-gambling policy.
+    </p>
+  </div>
 
   <div class="how-to-play-container">
     <a href="how-to-play.html" class="how-to-play-link">How to Play Game</a>
   </div>
 </div>
 
-  <div id="game-ui" class="hidden">
+<div id="game-ui" class="hidden">
+  <header>
+    <div id="currentPlayers">Current Players:296</div>
 
-    <header>
-  <div id="currentPlayers">Current Players:296</div>
-  <div>Available: KES <span id="available">0</span></div>
+    <div id="notifyContainer" class="notification-container">
+      <div class="bell-wrapper" id="bellWrapper">
+        <span class="badge" id="notifyBadge">1</span>
+        🔔
+      </div>
+      <!-- modal will be created dynamically -->
+    </div>
 
-  <div class="header-actions">
-    <input id="stakeAmount" type="number" min="10" max="100000" placeholder="Enter Stake" />
-    <button id="startGameBtn">Start Game</button>
-    <button id="depositBtn">Deposit</button>
-    <button id="withdrawBtn">Withdraw</button>
-    <button id="logoutBtn">Logout</button>
+    <div>Available: KES <span id="available">0</span></div>
+
+    <div class="header-actions">
+      <input id="stakeAmount" type="number" min="10" max="100000" placeholder="Enter Stake" />
+      <button id="startGameBtn">Start Game</button>
+      <button id="depositBtn">Deposit</button>
+      <button id="withdrawBtn">Withdraw</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <canvas id="arena"></canvas>
+  <div id="timerBar"><div id="timerFill"></div></div>
+</div>
+
+<div id="withdrawOverlay" class="overlay hidden">
+  <div class="overlay-content">
+    <h3>Withdraw Funds</h3>
+    <input id="wName" placeholder="Full Name" />
+    <input id="wEmail" placeholder="Email" />
+    <input id="wPhone" placeholder="Phone Number" />
+    <button id="submitWithdraw">Submit</button>
+    <button id="closeWithdraw">Cancel</button>
   </div>
-</header>
+</div>
 
-    <canvas id="arena"></canvas>
-
-    <div id="timerBar"><div id="timerFill"></div></div>
-  </div>
-
-  <div id="withdrawOverlay" class="overlay hidden">
-    <div class="overlay-content">
-      <h3>Withdraw Funds</h3>
-      <input id="wName" placeholder="Full Name" />
-      <input id="wEmail" placeholder="Email" />
-      <input id="wPhone" placeholder="Phone Number" />
-      <button id="submitWithdraw">Submit</button>
-      <button id="closeWithdraw">Cancel</button>
+<!-- Install Modal -->
+<div id="installModal" class="install-modal hidden">
+  <div class="install-content">
+    <h2>Install BilaRed</h2>
+    <p>Install BilaRed to enjoy a smoother, faster experience!</p>
+    <div class="install-buttons">
+      <button id="installBtn">Install App</button>
+      <button id="cancelInstall">Maybe Later</button>
     </div>
   </div>
+</div>
+
+<style>
+.hidden { display: none; }
+.install-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.install-content {
+  background: #fff;
+  color: #111;
+  padding: 20px 25px;
+  border-radius: 12px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.install-content h2 {
+  margin-bottom: 10px;
+  color: #e60023;
+}
+.install-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+.install-buttons button {
+  flex: 1;
+  margin: 0 5px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#installBtn { background: #e60023; color: #fff; }
+#cancelInstall { background: #ccc; }
+</style>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('Service Worker Registered'))
+    .catch(err => console.log('SW registration failed:', err));
+}
+</script>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  loadWallet();
+});
+
+const playerCountEl = document.getElementById("currentPlayers");
+function updatePlayerCount() {
+  const randomPlayers = Math.floor(200 + Math.random() * 250);
+  playerCountEl.textContent = `Current Players: ${randomPlayers.toLocaleString()}`;
+}
+setInterval(updatePlayerCount, 15000);
+updatePlayerCount();
+</script>
 
   <script src="script.js"></script>
   <script src="installPrompt.js"></script>
   <script src="serviceWorker.js"></script>
+  <script src="notification.js"></script>
 
 </body>
 </html>
+
 
 
 
