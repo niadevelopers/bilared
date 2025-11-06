@@ -136,7 +136,7 @@ if (withdrawOverlay) withdrawOverlay.classList.add("hidden");
       const modal = document.createElement("div");
       modal.className = "custom-modal";
       modal.innerHTML = `
-        <h3>Input Required</h3>
+        <h3>Notice</h3>
         <p>${message}</p>
         <input type="text" id="promptInput" value="${defaultValue}" autofocus />
         <div class="custom-modal-buttons">
@@ -196,7 +196,7 @@ function createLoader() {
   Object.assign(spinner.style, {
     width: "60px",
     height: "60px",
-    border: "6px solid rgba(255,255,255,0.3)",
+    border: "6px solid rgba(245, 161, 6, 1)",
     borderTopColor: "#fff",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
@@ -228,6 +228,7 @@ function hideLoader() {
     loader.style.visibility = "hidden";
   }
 }
+
 
 function sanitizeInput(value) {
   return value.replace(/<[^>]*>?/gm, "").replace(/[{}<>;$]/g, "").trim();
@@ -514,13 +515,13 @@ let tokens = [];
 let hazards = [];
 let sessionId = null;
 let sessionToken = null;
-let timer = 30;
-let totalTime = 30;
+let timer = 15;
+let totalTime = 15;
 let dragActive = false;
 let touchStart = null;
 let baseSpeed = 1.5;
 let safeZoneRadius = 150;
-let lastFrameTime = null; //added for time tracking
+let lastFrameTime = null; // <-- added for time tracking
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -594,11 +595,11 @@ function setupGame() {
 
   let numHazards, numTokens;
   if (isAndroid || isMobile) {
-    numHazards = 5;
-    numTokens = 8;
+    numHazards = 6;
+    numTokens = 9;
   } else {
     numHazards = 9;
-    numTokens = 12;
+    numTokens = 13;
   }
 
   tokens = [];
@@ -857,9 +858,20 @@ async function startGame() {
       sessionId = data.sessionId;
       sessionToken = data.sessionToken;
       setupGame();
+
+      let deviceTime = 15; 
+      const ua = navigator.userAgent.toLowerCase();
+      if (/android/i.test(ua)) {
+        deviceTime = 10;
+      } else if (
+        /ipad|tablet|kindle|playbook|silk|android(?!.*mobi)/i.test(ua)
+      ) {
+        deviceTime = 12;
+      }
+
       showCountdown(5, () => {
-        timer = 30;
-        totalTime = 30;
+        timer = deviceTime;
+        totalTime = deviceTime;
         gameRunning = true;
         lastFrameTime = null;
         requestAnimationFrame(gameLoop);
