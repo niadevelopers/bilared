@@ -421,7 +421,7 @@ depositBtn.onclick = async () => {
   const amount = parseFloat(amountInput);
 
   if (!amountInput || isNaN(amount)) return alert("Please enter a valid numeric amount.");
-  if (amount < 100) return alert("Minimum deposit is KSh 100. Please enter KSh 100 or more.");
+  if (amount < 50) return alert("Minimum deposit is KSh 50. Please enter KSh 50 or more.");//to be scaled to Kes 100 later.
   if (amount > 150000) return alert("Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
 
   const payerEmail = await prompt("Enter your email for this deposit:");
@@ -904,3 +904,4 @@ async function endGame(result) {
 }
 
 startGameBtn.onclick = startGame;
+
