@@ -240,7 +240,7 @@
     </div>
 
     <div>Account: KES <span id="available">0</span></div>
-    <button id="viewHistoryBtn" class="history-btn">View</button>
+    <button id="viewHistoryBtn" class="history-btn">🕓</button>
 
 
     <div class="header-actions">
@@ -267,6 +267,7 @@
   </div>
 </div>
 
+<!-- Install Modal -->
 <div id="installModal" class="install-modal hidden">
   <div class="install-content">
     <h2>Install BilaRed</h2>
@@ -344,12 +345,14 @@ toggleBtn.addEventListener("click", () => {
   isVisible = !isVisible;
 
   passwordInput.type = isVisible ? "text" : "password";
-  toggleBtn.textContent = isVisible ? "🙈" : "👁️"; 
+  toggleBtn.textContent = isVisible ? "🙈" : "👁️";  // eye-open / eye-closed
 });
-
+</script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
   const viewHistoryBtn = document.getElementById("viewHistoryBtn");
 
+  // Create overlay structure
   const overlay = document.createElement("div");
   overlay.id = "historyOverlay";
   overlay.innerHTML = `
@@ -364,30 +367,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const historyList = document.getElementById("historyList");
   const closeBtn = document.getElementById("closeHistory");
 
+  // Open overlay
   viewHistoryBtn.addEventListener("click", () => {
     overlay.classList.add("active");
     loadHistory();
   });
 
+  // Close overlay
   closeBtn.addEventListener("click", () => {
     overlay.classList.remove("active");
   });
 
+  // Save a result in this session
   function saveGameResult(result) {
     let history = JSON.parse(sessionStorage.getItem("gameHistory")) || [];
 
+    // Add the new record
     history.push({
       result,
       time: new Date().toLocaleTimeString(),
     });
 
+    // Keep only the 10 most recent
     if (history.length > 10) {
-      history = history.slice(-10); 
+      history = history.slice(-10); // keep last 10 entries
     }
 
+    // Save trimmed history
     sessionStorage.setItem("gameHistory", JSON.stringify(history));
   }
 
+  // Load and display history
   function loadHistory() {
     historyList.innerHTML = "";
     const history = JSON.parse(sessionStorage.getItem("gameHistory")) || [];
@@ -398,6 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Display from newest to oldest
     history
       .slice()
       .reverse()
@@ -407,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.innerHTML = `
           <span>${item.result === "win" ? "✅ Win" : "❌ Loss"}</span>
           <span>${item.time}</span>
-        `;
+          `;
         historyList.appendChild(div);
       });
   }
@@ -422,7 +433,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
