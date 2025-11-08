@@ -1,6 +1,6 @@
-window.addEventListener("DOMContentLoaded", () => {
+/*window.addEventListener("DOMContentLoaded", () => {
   loadWallet();
-});
+});*/
 
 const playerCountEl = document.getElementById("currentPlayers");
 function updatePlayerCount() {
