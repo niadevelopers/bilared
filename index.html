@@ -267,7 +267,6 @@
   </div>
 </div>
 
-<!-- Install Modal -->
 <div id="installModal" class="install-modal hidden">
   <div class="install-content">
     <h2>Install BilaRed</h2>
@@ -334,105 +333,13 @@ if ('serviceWorker' in navigator) {
   <script src="serviceWorker.js"></script>
   <script src="notification.js"></script>
   <script src="playerCount.js"></script>
+  <script src="togglePass.js"></script>
 
-<script>
-  const passwordInput = document.getElementById("password");
-const toggleBtn = document.getElementById("togglePassword");
-
-let isVisible = false;
-
-toggleBtn.addEventListener("click", () => {
-  isVisible = !isVisible;
-
-  passwordInput.type = isVisible ? "text" : "password";
-  toggleBtn.textContent = isVisible ? "🙈" : "👁️";  // eye-open / eye-closed
-});
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const viewHistoryBtn = document.getElementById("viewHistoryBtn");
-
-  // Create overlay structure
-  const overlay = document.createElement("div");
-  overlay.id = "historyOverlay";
-  overlay.innerHTML = `
-    <div class="history-content">
-      <h3>Game History</h3>
-      <div class="history-list" id="historyList"></div>
-      <button id="closeHistory">Close</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  const historyList = document.getElementById("historyList");
-  const closeBtn = document.getElementById("closeHistory");
-
-  // Open overlay
-  viewHistoryBtn.addEventListener("click", () => {
-    overlay.classList.add("active");
-    loadHistory();
-  });
-
-  // Close overlay
-  closeBtn.addEventListener("click", () => {
-    overlay.classList.remove("active");
-  });
-
-  // Save a result in this session
-  function saveGameResult(result) {
-    let history = JSON.parse(sessionStorage.getItem("gameHistory")) || [];
-
-    // Add the new record
-    history.push({
-      result,
-      time: new Date().toLocaleTimeString(),
-    });
-
-    // Keep only the 10 most recent
-    if (history.length > 10) {
-      history = history.slice(-10); // keep last 10 entries
-    }
-
-    // Save trimmed history
-    sessionStorage.setItem("gameHistory", JSON.stringify(history));
-  }
-
-  // Load and display history
-  function loadHistory() {
-    historyList.innerHTML = "";
-    const history = JSON.parse(sessionStorage.getItem("gameHistory")) || [];
-
-    if (history.length === 0) {
-      historyList.innerHTML =
-        "<p style='text-align:center;opacity:0.7;'>No games played this session.</p>";
-      return;
-    }
-
-    // Display from newest to oldest
-    history
-      .slice()
-      .reverse()
-      .forEach((item) => {
-        const div = document.createElement("div");
-        div.className = `history-item ${item.result}`;
-        div.innerHTML = `
-          <span>${item.result === "win" ? "✅ Win" : "❌ Loss"}</span>
-          <span>${item.time}</span>
-          `;
-        historyList.appendChild(div);
-      });
-  }
-
-  // Make available globally
-  window.saveGameResult = saveGameResult;
-});
-
-</script>
-
-
+ 
 
 </body>
 </html>
+
 
 
 
