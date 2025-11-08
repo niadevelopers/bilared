@@ -31,9 +31,46 @@
 
 <meta name="description" content="It’s not luck — it’s skill. Real players. Real money. And every round you skip is a win you just gave away _ Bilared." />
 
-  <style>
-
-
+<style>
+.hidden { display: none; }
+.install-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.install-content {
+  background: #fff;
+  color: #111;
+  padding: 20px 25px;
+  border-radius: 12px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.install-content h2 {
+  margin-bottom: 10px;
+  color: #e60023;
+}
+.install-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+.install-buttons button {
+  flex: 1;
+  margin: 0 5px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+   #installBtn { background: #e60023; color: #fff; }
+   #cancelInstall { background: #ccc; }
 
   .history-btn {
   background: #222;
@@ -50,7 +87,6 @@
   background: #e60023;
 }
 
-/* Overlay styling */
 #historyOverlay {
   position: fixed;
   top: 0;
@@ -130,10 +166,7 @@
   .hidden {
     display: none !important;
   }
-
-</style>
-
-  <style>
+    
   .hidden {
     display: none !important;
   }
@@ -170,9 +203,33 @@
     font-weight: bold;
   }
   </style>
+  
 </head>
 
 <body>
+  <header>
+    <div id="currentPlayers">Online:296</div>
+
+    <div id="notifyContainer" class="notification-container">
+      <div class="bell-wrapper" id="bellWrapper">
+        <span class="badge" id="notifyBadge">1</span>
+        🔔
+      </div>
+      <!-- modal will be created dynamically -->
+    </div>
+
+    <div>Account: KES <span id="available">0</span></div>
+    <button id="viewHistoryBtn" class="history-btn">🕓</button>
+
+
+    <div class="header-actions">
+      <input id="stakeAmount" type="number" min="10" max="100000" placeholder="Enter Stake" />
+      <button id="startGameBtn">Start</button>
+      <button id="depositBtn">Topup</button>
+      <button id="withdrawBtn">Withdraw</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
 
 <div id="auth-section">
   <h2>Login / Register</h2>
@@ -228,30 +285,7 @@
 </div>
 
 <div id="game-ui" class="hidden">
-  <header>
-    <div id="currentPlayers">Online:296</div>
-
-    <div id="notifyContainer" class="notification-container">
-      <div class="bell-wrapper" id="bellWrapper">
-        <span class="badge" id="notifyBadge">1</span>
-        🔔
-      </div>
-      <!-- modal will be created dynamically -->
-    </div>
-
-    <div>Account: KES <span id="available">0</span></div>
-    <button id="viewHistoryBtn" class="history-btn">🕓</button>
-
-
-    <div class="header-actions">
-      <input id="stakeAmount" type="number" min="10" max="100000" placeholder="Enter Stake" />
-      <button id="startGameBtn">Start</button>
-      <button id="depositBtn">Topup</button>
-      <button id="withdrawBtn">Withdraw</button>
-      <button id="logoutBtn">Logout</button>
-    </div>
-  </header>
-
+  
   <canvas id="arena"></canvas>
   <div id="timerBar"><div id="timerFill"></div></div>
 </div>
@@ -278,48 +312,6 @@
   </div>
 </div>
 
-<style>
-.hidden { display: none; }
-.install-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.install-content {
-  background: #fff;
-  color: #111;
-  padding: 20px 25px;
-  border-radius: 12px;
-  max-width: 300px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-.install-content h2 {
-  margin-bottom: 10px;
-  color: #e60023;
-}
-.install-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-}
-.install-buttons button {
-  flex: 1;
-  margin: 0 5px;
-  padding: 8px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-#installBtn { background: #e60023; color: #fff; }
-#cancelInstall { background: #ccc; }
-</style>
-
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js')
@@ -339,6 +331,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
