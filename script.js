@@ -896,6 +896,12 @@ async function endGame(result) {
       body: JSON.stringify({ sessionId, result }),
     });
     alert(result === "win" ? "You won!" : "You lost!");
+
+    // ⬇️ record the game locally for this session only
+    if (typeof saveGameResult === "function") {
+      saveGameResult(result);
+    }
+
     loadWallet();
   } catch (err) {
     console.error(err);
@@ -903,6 +909,5 @@ async function endGame(result) {
   }
 }
 
+
 startGameBtn.onclick = startGame;
-
-
