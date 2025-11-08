@@ -213,7 +213,8 @@ button:hover {
   z-index: 100;
 }
 
-@media (max-width: 600px) {
+/* === RESPONSIVENESS === */
+@media (max-width: 760px) {
   header {
     display: flex;
     overflow-x: auto;
@@ -223,21 +224,8 @@ button:hover {
     background: linear-gradient(90deg, #111 0%, #1a1a1a 100%);
     padding: 8px;
     gap: 12px;
-  }
 
-  #auth-section {
-  text-align: center;
-  margin-top: 10%;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 35px;
-  border-radius: 15px;
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  box-shadow: 0 0 25px rgba(255, 215, 0, 0.25);
-  width: 90%;
-  max-width: 370px;
-  margin-left: auto;
-  margin-right: auto;
-}
+  }
 
   header::-webkit-scrollbar {
     display: none;
@@ -249,4 +237,3 @@ button:hover {
     flex: 0 0 auto;
   }
 }
-
