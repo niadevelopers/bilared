@@ -11,7 +11,7 @@ const urlsToCache = [
   "/playerCount.js",
   "/notification.js",
   "/demo.js",
-  "/howToPlay.js",
+  "/how-ToPlay.js",
   "/demo_mode.html",
   "/images/cat.png",
   "/images/cat-blue.png"
