@@ -3,16 +3,27 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title> Bilared Lounge Edition </title>
-<link rel="stylesheet" href="style.css" />
+<title>Bilared Lounge Edition</title>
 
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/images/cat.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/images/cat.png">
 <meta name="theme-color" content="#000000"></meta>
-  
 <style>
   
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: radial-gradient(circle at 10% 10%, rgba(18,18,24,0.7) 0%, rgba(4,4,6,1) 40%), linear-gradient(180deg,#020203 0%, #000 100%);
+    color:#e9f7f4;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
   #particles {
     position:fixed;
     inset:0;
@@ -130,6 +141,7 @@
     font-size:0.95rem;
   }
 
+  
   .controls {
     display:flex;
     justify-content:space-between;
@@ -159,7 +171,7 @@
 
   .ctrls {
   display: flex;
-  flex-wrap: wrap;      
+  flex-wrap: wrap;     
   gap: 10px;
   justify-content: flex-end; 
 }
@@ -191,6 +203,7 @@
     margin-top:12px;text-align:center;color:#9fbfc0;font-size:0.92rem;
   }
 
+ 
   .pulse {
     animation: pulse 420ms ease;
   }
@@ -200,6 +213,7 @@
     100%{transform:scale(1)}
   }
 
+  
   @media (max-width:640px){
     .card{width:94vw;padding:18px;border-radius:12px}
     .badge{min-width:44px;height:44px;font-size:0.98rem}
@@ -246,8 +260,6 @@
       <div class="foot">Use ← and → keys to navigate • Sound & effects will start on first interaction</div>
     </section>
   </div>
-<script src="howToplay.js"></script>
+  <script src="howToPlay.js"></script>
 </body>
 </html>
-
-
