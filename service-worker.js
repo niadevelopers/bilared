@@ -1,4 +1,4 @@
-const CACHE_NAME = "bilared-cache-v2";
+const CACHE_NAME = "bilared-cache-v2.1";
 const urlsToCache = [
   "/",
   "/index.html",
@@ -10,6 +10,9 @@ const urlsToCache = [
   "/installPrompt.js",
   "/playerCount.js",
   "/notification.js",
+  "/demo.js",
+  "/howToPlay.js",
+  "/demo_mode.html",
   "/images/cat.png",
   "/images/cat-blue.png"
 ];
@@ -17,7 +20,6 @@ const urlsToCache = [
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      //console.log("Caching app shell...");
       return cache.addAll(urlsToCache);
     })
   );
@@ -32,7 +34,6 @@ self.addEventListener("activate", event => {
       return Promise.all(
         cacheNames.map(name => {
           if (name !== CACHE_NAME) {
-            //console.log("Deleting old cache:", name);
             return caches.delete(name);
           }
         })
