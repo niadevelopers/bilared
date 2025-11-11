@@ -291,12 +291,18 @@ async function login() {
     return alert(passwordMsg);
   }
 
+  // ✅ Get Turnstile token
+  const tokenTurnstile = turnstile.getResponse();
+  if (!tokenTurnstile) {
+    return alert("Please verify you’re not a robot before logging in.");
+  }
+
   showLoader();
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: emailVal, password: passwordVal }),
+      body: JSON.stringify({ email: emailVal, password: passwordVal, "cf-turnstile-response": tokenTurnstile }),
     });
     const data = await res.json();
 
@@ -315,6 +321,7 @@ async function login() {
     alert("Login error");
   } finally {
     hideLoader();
+    turnstile.reset(); // reset Turnstile widget
   }
 }
 
@@ -342,12 +349,18 @@ async function register() {
     return alert(passwordMsg);
   }
 
+  // ✅ Get Turnstile token
+  const tokenTurnstile = turnstile.getResponse();
+  if (!tokenTurnstile) {
+    return alert("Please verify you’re not a robot before registering.");
+  }
+
   showLoader();
   try {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameVal, email: emailVal, password: passwordVal }),
+      body: JSON.stringify({ username: usernameVal, email: emailVal, password: passwordVal, "cf-turnstile-response": tokenTurnstile }),
     });
     const data = await res.json();
 
@@ -361,11 +374,13 @@ async function register() {
     alert("Registration error");
   } finally {
     hideLoader();
+    turnstile.reset(); // reset Turnstile widget
   }
 }
 
 loginBtn.onclick = login;
 registerBtn.onclick = register;
+
 
 logoutBtn.onclick = () => {
   localStorage.clear();
@@ -938,3 +953,4 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
