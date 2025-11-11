@@ -18,21 +18,28 @@ const STEPS = [
            <div class="hint">Tip: check your Available balance after payment; if delayed, contact support.</div>`
   },
   {
+  title: "Try Demo Mode",
+  sub: "Practice risk-free and master the gameplay.",
+  html: `<p><strong>Step 4 — Try Demo Mode:</strong> Before staking real funds, explore the <em>Try Demo</em> option available in the navigation bar. This lets you experience the full gameplay environment without any financial risk.</p>
+         <p>Use this mode to understand controls, timing, and strategy before moving to live play. The demo behaves exactly like the real game — only the rewards differ.</p>
+         <div class="hint">Tip: New players who skip demo mode tend to lose faster. Scroll the navigation to locate the <em>Try Demo</em> button and get comfortable first.</div>`
+},
+  {
     title: "Play",
     sub: "Stake, start, and dodge hazards to win.",
-    html: `<p><strong>Step 4 — Play:</strong> Enter your stake, click <em>Start Game</em>. Control the white ball to avoid red hazards and collect green tokens. Survive until time runs out to win.</p>
+    html: `<p><strong>Step 5 — Play:</strong> Enter your stake, click <em>Start Game</em>. Control the white ball to avoid red hazards and collect green tokens. Survive until time runs out to win.</p>
            <div class="hint">Tip: Mobile drag and desktop mouse follow are supported — try gentle, small movements for control.</div>`
   },
   {
     title: "Withdraw",
     sub: "Withdraw your winnings quickly.",
-    html: `<p><strong>Step 5 — Withdraw:</strong> When you win, open <em>Withdraw</em>, provide payout details and submit. Withdrawals are processed to your selected payout method.</p>
+    html: `<p><strong>Step 6 — Withdraw:</strong> When you win, open <em>Withdraw</em>, provide payout details and submit. Withdrawals are processed to your selected payout method.</p>
            <div class="hint">Tip: ensure payout info is accurate to avoid delays.</div>`
   },
   {
     title: "Logout & Safety",
     sub: "Secure your account after play.",
-    html: `<p><strong>Step 6 — Logout:</strong> Click <em>Logout</em> when finished, especially on shared devices, to keep your account secure.</p>
+    html: `<p><strong>Step 7 — Logout:</strong> Click <em>Logout</em> when finished, especially on shared devices, to keep your account secure.</p>
            <div class="hint">Tip: never share your password or session tokens.</div>`
   }
 ];
