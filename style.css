@@ -183,6 +183,18 @@ header input[type="number"]:focus {
   margin: 5% auto;
 }
 
+/* Center Turnstile properly inside auth modal */
+#auth-section .cf-turnstile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px auto 0 auto; /* space from fields, centered */
+  width: 100%;
+  max-width: 100%;
+  transform: none;
+}
+
+
 #auth-section h2,
 #withdrawOverlay h2 {
   color: #ffd700;
@@ -255,4 +267,5 @@ button:hover {
   backdrop-filter: blur(4px);
   z-index: 100;
 }
+
 
