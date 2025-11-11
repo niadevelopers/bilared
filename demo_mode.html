@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Arena</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="/images/cat.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/images/cat.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/cat.png">
+<meta name="theme-color" content="#000000"></meta>
+
+<style>
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    color: #fff;
+  }
+
+  #game-ui {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+  }
+
+  #header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 15%;
+    min-height: 80px;
+    background: linear-gradient(90deg, #0f0f0f, #2a2a2a);
+    border-bottom: 2px solid #444;
+  }
+
+  #wallet {
+    font-size: 1.2rem;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  #header button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  #startGameBtn {
+    background-color: #4caf50;
+  }
+  #startGameBtn:hover {
+    background-color: #45a049;
+  }
+
+  #goRealBtn {
+    background-color: #2196f3;
+  }
+  #goRealBtn:hover {
+    background-color: #1976d2;
+  }
+
+  #timer {
+    height: 10px;
+    width: 80%;
+    background: #333;
+    border-radius: 5px;
+    margin: 5px auto 0 auto;
+    overflow: hidden;
+  }
+
+  #timerFill {
+    height: 100%;
+    width: 0%;
+    background: #ff9800;
+    transition: width 0.2s linear;
+  }
+
+  #arena {
+    flex: 1; 
+    background: #121212;
+    display: block;
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    #header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      gap: 10px;
+    }
+
+    #wallet {
+      font-size: 1rem;
+    }
+
+    #header button {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-ui">
+  <div id="header">
+    <div id="wallet">
+      Balance: <span id="balance"></span>
+    </div>
+    <button id="startGameBtn">Start Game</button>
+    <button id="goRealBtn">Go to Real Game</button>
+  </div>
+
+  <div id="timer"><div id="timerFill"></div></div>
+
+  <canvas id="arena"></canvas>
+</div>
+
+<script src="demo.js"></script>
+<script>
+  function resizeArena() {
+    arena.width = arena.clientWidth;
+    arena.height = arena.clientHeight;
+  }
+  window.addEventListener("resize", resizeArena);
+  resizeArena();
+  const goRealBtn = document.getElementById("goRealBtn");
+  goRealBtn.onclick = () => {
+    window.location.href = "index.html";
+  };
+</script>
+</body>
+</html>
