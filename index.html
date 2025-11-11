@@ -8,6 +8,8 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#e60023">
   <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
 
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -244,7 +246,11 @@
     <input id="username" placeholder="Username (for register)" />
     <small class="error-msg" id="usernameError"></small>
   </div>
-
+<--!turnstile widget-->
+ <div class="cf-turnstile" 
+     data-sitekey="YOUR_SITE_KEY_HERE">
+</div>
+  
   <div class="auth-buttons">
     <button id="loginBtn">Login</button>
     <button id="registerBtn">Register</button>
@@ -341,4 +347,5 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
