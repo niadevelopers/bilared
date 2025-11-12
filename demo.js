@@ -1,5 +1,6 @@
 let gameRunning = false; 
 let gamePaused = false;
+let isReplaying = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
 let hazards = [];
@@ -11,6 +12,7 @@ let floatingTexts = [];
 let particles = [];
 let playerTrail = [];
 let animationActive = false;
+let replayFrames = [];
 
 const arena = document.getElementById("arena");
 const ctx = arena.getContext("2d");
@@ -96,6 +98,7 @@ function setupGame() {
     player.y = arena.height / 2;
     player.vx = 0; player.vy = 0;
     tokenComboCount = 0;
+    replayFrames = [];
 
     const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
     const numTokens = isMobile ? 9 : 13;
@@ -108,7 +111,7 @@ function setupGame() {
             y: random(50, arena.height-50), 
             r: 8, 
             collected:false,
-            dx: random(-0.7,0.7), 
+            dx: random(-0.7,0.7),
             dy: random(-0.7,0.7)
         });
     }
@@ -212,7 +215,7 @@ function update(){
             t.dx += random(-0.05, 0.05);
             t.dy += random(-0.05, 0.05);
             const spd = Math.hypot(t.dx, t.dy);
-            if(spd > 1) { t.dx *= 1 / spd; t.dy *= 1 / spd; }
+            if(spd > 1) { t.dx /= spd; t.dy /= spd; }
         }
     });
 
@@ -221,15 +224,21 @@ function update(){
         if(!h.chase && h.chaseCooldown<=0 && dist<150 && Math.random()<0.015){ h.chase=true; h.chaseTimer=120; }
         if(h.chase){
             const angle = Math.atan2(player.y-h.y, player.x-h.x);
-            const speed = h.baseSpeed*1.5; h.dx = Math.cos(angle)*speed; h.dy = Math.sin(angle)*speed;
-            h.chaseTimer--; if(h.chaseTimer<=0){ h.chase=false; h.chaseCooldown=random(60,180); }
+            const speed = h.baseSpeed*1.5; 
+            h.dx = Math.cos(angle)*speed; 
+            h.dy = Math.sin(angle)*speed;
+            h.chaseTimer--; 
+            if(h.chaseTimer<=0){ h.chase=false; h.chaseCooldown=random(60,180); }
         } else {
-            h.jitterTimer--; if(h.jitterTimer<=0){ h.dx+=random(-0.5,0.5); h.dy+=random(-0.5,0.5); h.jitterTimer=random(30,120); }
+            h.jitterTimer--; 
+            if(h.jitterTimer<=0){ h.dx+=random(-0.5,0.5); h.dy+=random(-0.5,0.5); h.jitterTimer=random(30,120); }
             if(h.chaseCooldown>0) h.chaseCooldown--;
         }
         h.x+=h.dx; h.y+=h.dy;
-        if(h.x<h.r||h.x>arena.width-h.r) h.dx*=-1;
-        if(h.y<h.r||h.y>arena.height-h.r) h.dy*=-1;
+        if(h.x<h.r){ h.x=h.r; h.dx*=-1; }
+        if(h.x>arena.width-h.r){ h.x=arena.width-h.r; h.dx*=-1; }
+        if(h.y<h.r){ h.y=h.r; h.dy*=-1; }
+        if(h.y>arena.height-h.r){ h.y=arena.height-h.r; h.dy*=-1; }
 
         if(dist < player.r + h.r){ playHazardSound(); endGame("lose"); }
     });
@@ -256,17 +265,23 @@ function gameLoop(timestamp){
     draw(); update();
 
     if(!gamePaused){
-        timer -= delta;
-        timerFill.style.width = `${Math.max(0,(timer/totalTime)*100)}%`;
-        if(timer<=0){ playLoseSound(); endGame("lose"); lastFrameTime=null; }
-        else requestAnimationFrame(gameLoop);
+        if(!isReplaying){
+            timer -= delta;
+            timerFill.style.width = `${Math.max(0,(timer/totalTime)*100)}%`;
+            if(timer<=0){ playLoseSound(); endGame("lose"); lastFrameTime=null; return; }
+            replayFrames.push(ctx.getImageData(0,0,arena.width,arena.height));
+        }
+        requestAnimationFrame(gameLoop);
     } else requestAnimationFrame(gameLoop);
 }
 
 function startGame(){
+    if(isReplaying) return; 
     showCountdown(3, ()=>{
         setupGame();
-        timer=15; totalTime=15; gameRunning=true; lastFrameTime=null;
+        timer=30; totalTime=30; gameRunning=true; lastFrameTime=null;
+        animationActive=false;
+        startGameBtn.disabled = true;
         requestAnimationFrame(gameLoop);
     });
 }
@@ -274,6 +289,65 @@ function startGame(){
 function endGame(result){
     gameRunning=false;
     showOverlay(result);
+}
+
+function showOverlay(result){
+    animationActive = true;
+    startGameBtn.disabled = false;
+
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style,{
+        position:"fixed",top:"0",left:"0",width:"100%",height:"100%",
+        background:"rgba(0,0,0,0.85)",color:"white",
+        display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",
+        zIndex:"9999",fontWeight:"bold",textAlign:"center"
+    });
+    document.body.appendChild(overlay);
+
+    const message = document.createElement("div");
+    message.style.fontSize = "80px";
+    message.style.marginBottom = "40px";
+    message.style.textShadow = "0 0 15px gold, 0 0 20px orange";
+    message.textContent = result==="win"?"YOU WON!":"YOU LOST!";
+    overlay.appendChild(message);
+
+    const replayBtn = document.createElement("button");
+    replayBtn.style.fontSize="30px";
+    replayBtn.style.padding="12px 35px";
+    replayBtn.style.cursor="pointer";
+    replayBtn.style.border="2px solid white";
+    replayBtn.style.borderRadius="12px";
+    replayBtn.style.background="linear-gradient(45deg, #ff7f50, #ff4500)";
+    replayBtn.style.color="white";
+    replayBtn.style.boxShadow = "0 0 20px rgba(255,69,0,0.8)";
+    replayBtn.textContent="Replay";
+    replayBtn.onclick=()=>{
+        overlay.style.display="none"; 
+        startReplay();
+    };
+    overlay.appendChild(replayBtn);
+}
+
+function startReplay(){
+    if(replayFrames.length===0) return;
+    isReplaying = true;
+    startGameBtn.disabled = true; 
+    let idx = 0;
+
+    const step = ()=>{
+        if(idx>=replayFrames.length){ 
+            isReplaying=false; 
+            startGameBtn.disabled = false;
+            replayFrames = [];
+            ctx.clearRect(0,0,arena.width,arena.height); 
+            draw(); 
+            return; 
+        }
+        ctx.putImageData(replayFrames[idx],0,0);
+        idx++;
+        requestAnimationFrame(step);
+    };
+    step();
 }
 
 arena.addEventListener("mousemove", (e) => {
@@ -299,66 +373,16 @@ function showCountdown(seconds, callback){
     const overlay=document.createElement("div");
     Object.assign(overlay.style,{
         position:"fixed",top:"0",left:"0",width:"100%",height:"100%",
-        background:"rgba(0,0,0,0.7)",color:"white",fontSize:"90px",
+        background:"rgba(0,0,0,0.85)",color:"white",fontSize:"90px",
         display:"flex",justifyContent:"center",alignItems:"center",zIndex:"9999",fontWeight:"bold"
     });
     document.body.appendChild(overlay);
     let count = seconds; overlay.textContent = count;
     const interval = setInterval(()=>{
-        count--; if(count>0) overlay.textContent=count;
+        count--; 
+        if(count>0) overlay.textContent=count;
         else { clearInterval(interval); document.body.removeChild(overlay); callback(); }
     },1000);
-}
-
-function showOverlay(result){
-    animationActive = true;
-    startGameBtn.disabled = true;
-    const overlay = document.createElement("canvas");
-    overlay.width = arena.width; overlay.height = arena.height;
-    overlay.style.position="fixed"; overlay.style.top="0"; overlay.style.left="0"; overlay.style.zIndex="9999";
-    document.body.appendChild(overlay);
-    const octx = overlay.getContext("2d");
-
-    let duration = 3.5, elapsed = 0;
-    let particlesOverlay = [];
-    for(let i=0;i<150;i++){
-        particlesOverlay.push({
-            x: overlay.width/2,
-            y: result==="win"?overlay.height:overlay.height/2,
-            vx: random(-5,5),
-            vy: result==="win"?random(-15,-5):random(-8,8),
-            r: random(3,6),
-            color: result==="win"?`hsl(${random(0,360)},100%,50%)`:"rgba(255,100,50,0.8)",
-            alpha:1
-        });
-    }
-
-    const step = ()=>{
-        const dt = 1/60; elapsed+=dt;
-        octx.clearRect(0,0,overlay.width,overlay.height);
-        octx.fillStyle="rgba(0,0,0,0.4)"; octx.fillRect(0,0,overlay.width,overlay.height);
-
-        particlesOverlay.forEach(p=>{
-            octx.fillStyle=p.color;
-            octx.beginPath(); octx.arc(p.x,p.y,p.r,0,Math.PI*2); octx.fill();
-            p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.alpha-=0.015;
-        });
-
-        octx.textAlign="center"; octx.font="bold 70px Arial";
-        if(result==="win"){
-            const bounce = Math.sin(elapsed*5)*30;
-            octx.fillStyle="gold"; octx.fillText("YOU WON!", overlay.width/2, overlay.height/2 - bounce);
-        } else {
-            const progress = Math.min(elapsed/duration,1);
-            const scale = 1 + 0.5*Math.sin(progress*Math.PI*3);
-            octx.save(); octx.translate(overlay.width/2, overlay.height/2);
-            octx.scale(scale,scale*1.1); octx.fillStyle="red"; octx.fillText("YOU LOST!",0,0); octx.restore();
-        }
-
-        if(elapsed<duration) requestAnimationFrame(step);
-        else { document.body.removeChild(overlay); animationActive=false; startGameBtn.disabled=false; }
-    };
-    requestAnimationFrame(step);
 }
 
 startGameBtn.onclick = startGame;
