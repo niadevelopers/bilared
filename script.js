@@ -291,7 +291,6 @@ async function login() {
     return alert(passwordMsg);
   }
 
-  // ✅ Get Turnstile token
   const tokenTurnstile = turnstile.getResponse();
   if (!tokenTurnstile) {
     return alert("Please verify you’re not a robot before logging in.");
@@ -321,7 +320,7 @@ async function login() {
     alert("Login error");
   } finally {
     hideLoader();
-    turnstile.reset(); // reset Turnstile widget
+    turnstile.reset();
   }
 }
 
@@ -349,7 +348,6 @@ async function register() {
     return alert(passwordMsg);
   }
 
-  // ✅ Get Turnstile token
   const tokenTurnstile = turnstile.getResponse();
   if (!tokenTurnstile) {
     return alert("Please verify you’re not a robot before registering.");
@@ -374,7 +372,7 @@ async function register() {
     alert("Registration error");
   } finally {
     hideLoader();
-    turnstile.reset(); // reset Turnstile widget
+    turnstile.reset();
   }
 }
 
@@ -584,15 +582,15 @@ function playHazardSound() {
 
 function playWinSound() {
   let startTime = audioCtx.currentTime;
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 8; i++) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(300 + i * 40, startTime + i * 0.6);
-    gain.gain.setValueAtTime(0.12, startTime + i * 0.6);
+    osc.frequency.setValueAtTime(300 + i * 40, startTime + i * 0.45);
+    gain.gain.setValueAtTime(0.12, startTime + i * 0.45);
     osc.connect(gain).connect(audioCtx.destination);
-    osc.start(startTime + i * 0.6);
-    osc.stop(startTime + i * 0.6 + 0.5);
+    osc.start(startTime + i * 0.45);
+    osc.stop(startTime + i * 0.45 + 0.4);
   }
 }
 
@@ -629,7 +627,15 @@ function setupGame() {
 
   tokens = [];
   for (let i = 0; i < numTokens; i++) {
-    tokens.push({ x: random(50, arena.width - 50), y: random(50, arena.height - 50), r: 8, collected: false });
+    tokens.push({
+      x: random(50, arena.width - 50),
+      y: random(50, arena.height - 50),
+      r: 8,
+      collected: false,
+      dx: random(-0.4, 0.4),
+      dy: random(-0.4, 0.4),
+      jitterTimer: random(60, 180)
+    });
   }
 
   hazards = [];
@@ -731,7 +737,7 @@ function update() {
     if(!h.chase && h.chaseCooldown<=0 && dist<150 && Math.random()<0.015){ h.chase=true; h.chaseTimer=120; }
     if(h.chase){
       const angle=Math.atan2(player.y-h.y,player.x-h.x);
-      const speed=h.baseSpeed*1.5; h.dx=Math.cos(angle)*speed; h.dy=Math.sin(angle)*speed;
+      const speed=h.baseSpeed*1.8; h.dx=Math.cos(angle)*speed; h.dy=Math.sin(angle)*speed;
       h.chaseTimer--; if(h.chaseTimer<=0){ h.chase=false; h.chaseCooldown=random(60,180); }
     } else {
       h.jitterTimer--; if(h.jitterTimer<=0){ h.dx+=random(-0.5,0.5); h.dy+=random(-0.5,0.5); h.jitterTimer=random(30,120);}
@@ -740,6 +746,25 @@ function update() {
     h.x+=h.dx; h.y+=h.dy;
     if(h.x<h.r||h.x>arena.width-h.r) h.dx*=-1;
     if(h.y<h.r||h.y>arena.height-h.r) h.dy*=-1;
+  });
+
+  tokens.forEach(t=>{
+    if(!t.collected){
+      t.jitterTimer--;
+      if(t.jitterTimer <= 0){
+        t.dx += random(-0.25, 0.25);
+        t.dy += random(-0.25, 0.25);
+        t.dx = Math.max(-0.9, Math.min(0.9, t.dx));
+        t.dy = Math.max(-0.9, Math.min(0.9, t.dy));
+        t.jitterTimer = random(60, 180);
+      }
+      t.x += t.dx;
+      t.y += t.dy;
+      if(t.x < t.r){ t.x = t.r; t.dx *= -1; }
+      if(t.x > arena.width - t.r){ t.x = arena.width - t.r; t.dx *= -1; }
+      if(t.y < t.r){ t.y = t.r; t.dy *= -1; }
+      if(t.y > arena.height - t.r){ t.y = arena.height - t.r; t.dy *= -1; }
+    }
   });
 
   tokens.forEach(t=>{
@@ -953,4 +978,3 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
-
