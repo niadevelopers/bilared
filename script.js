@@ -542,6 +542,9 @@ let floatingTexts = [];
 let particles = [];
 let playerTrail = [];
 let animationActive = false;
+let replayFrames = [];
+let replayMode = false;
+let replayIndex = 0;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -619,8 +622,16 @@ function setupGame() {
   player.vx = 0;
   player.vy = 0;
 
-  const isAndroid = /android/i.test(navigator.userAgent);
-  const isMobile = /mobile|iphone|ipad|ipod|android/i.test(navigator.userAgent);
+  const ua = navigator.userAgent.toLowerCase();
+  const isAndroid = /android/i.test(ua);
+  const isMobile = /mobile|iphone|ipad|ipod|android/i.test(ua);
+  const isDesktop = !isMobile;
+
+  if (isAndroid || isMobile) {
+    baseSpeed = 1.85; 
+  } else if (isDesktop) {
+    baseSpeed = 1.45;
+  }
 
   let numHazards = (isAndroid || isMobile) ? 6 : 9;
   let numTokens = (isAndroid || isMobile) ? 9 : 13;
@@ -643,12 +654,25 @@ function setupGame() {
     let hx, hy;
     do { hx = random(50, arena.width - 50); hy = random(50, arena.height - 50); } 
     while (distance({ x: hx, y: hy }, player) < safeZoneRadius);
+
     hazards.push({
-      x: hx, y: hy, r: random(10,25), dx: random(-2,2)*baseSpeed, dy: random(-2,2)*baseSpeed,
-      baseSpeed, jitterTimer: random(30,120), chase:false, chaseTimer:0, chaseCooldown:0, glowPhase:0
+      x: hx,
+      y: hy,
+      r: random(10, 25),
+      dx: random(-2, 2) * baseSpeed,
+      dy: random(-2, 2) * baseSpeed,
+      baseSpeed,
+      jitterTimer: random(30, 120),
+      chase: false,
+      chaseTimer: 0,
+      chaseCooldown: 0,
+      glowPhase: 0
     });
   }
+
+  replayFrames = [];
 }
+
 
 function spawnParticles(x, y, color="lime", count=10){
   for(let i=0;i<count;i++){
@@ -727,6 +751,12 @@ function draw(){
 function update() {
   if(gamePaused || animationActive) return;
 
+  replayFrames.push({
+    player:{...player},
+    tokens:tokens.map(t=>({...t})),
+    hazards:hazards.map(h=>({...h}))
+  });
+
   if(!dragActive){ player.vx*=0.92; player.vy*=0.92; }
   player.x += player.vx; player.y += player.vy;
   player.x = Math.max(player.r,Math.min(arena.width-player.r,player.x));
@@ -791,77 +821,63 @@ function update() {
 function showOverlay(result){
   animationActive = true;
   startGameBtn.disabled = true;
-  const overlay = document.createElement("canvas");
-  overlay.width = arena.width;
-  overlay.height = arena.height;
-  overlay.style.position = "fixed";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.zIndex = "9999";
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.7);display:flex;flex-direction:column;
+    justify-content:center;align-items:center;z-index:9999;color:white;
+  `;
   document.body.appendChild(overlay);
-  const octx = overlay.getContext("2d");
 
-  let duration = 3.5; 
-  let elapsed = 0;
-  let particlesOverlay = [];
+  const text = document.createElement("div");
+  text.style.fontSize="70px"; text.style.fontWeight="bold"; text.style.marginBottom="30px";
+  text.textContent = result==="win"?"YOU WON!":"YOU LOST!";
+  text.style.color = result==="win"?"gold":"red";
+  overlay.appendChild(text);
 
-  const initParticles = ()=>{
-    for(let i=0;i<150;i++){
-      particlesOverlay.push({
-        x: overlay.width/2,
-        y: result==="win"?overlay.height:overlay.height/2,
-        vx: random(-5,5),
-        vy: result==="win"?random(-15,-5):random(-8,8),
-        r: random(3,6),
-        color: result==="win"?`hsl(${random(0,360)},100%,50%)`:"rgba(255,100,50,0.8)",
-        alpha:1
-      });
-    }
+  const replayBtn = document.createElement("button");
+  replayBtn.textContent="Replay Last Round";
+  replayBtn.style.padding="10px 20px"; replayBtn.style.fontSize="20px"; replayBtn.style.cursor="pointer";
+  overlay.appendChild(replayBtn);
+
+  replayBtn.onclick = ()=>{
+    overlay.remove();
+    runReplay();
   };
 
-  initParticles();
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent="Close";
+  closeBtn.style.padding="10px 20px"; closeBtn.style.fontSize="20px"; replayBtn.style.cursor="pointer";
+  closeBtn.style.marginTop="15px";
+  overlay.appendChild(closeBtn);
 
-  const step = ()=>{
-    const dt = 1/60;
-    elapsed += dt;
-    octx.clearRect(0,0,overlay.width,overlay.height);
-
-    octx.fillStyle = `rgba(0,0,0,0.4)`;
-    octx.fillRect(0,0,overlay.width, overlay.height);
-
-    particlesOverlay.forEach(p=>{
-      octx.fillStyle = p.color;
-      octx.beginPath(); octx.arc(p.x,p.y,p.r,0,Math.PI*2); octx.fill();
-      p.x += p.vx; p.y += p.vy;
-      p.vy += 0.3;
-      p.alpha -= 0.015;
-    });
-
-    octx.textAlign = "center";
-    octx.font = "bold 70px Arial";
-    if(result==="win"){
-      const bounce = Math.sin(elapsed*5)*30;
-      octx.fillStyle = "gold";
-      octx.fillText("YOU WON!", overlay.width/2, overlay.height/2 - bounce);
-    } else {
-      const progress = Math.min(elapsed/duration,1);
-      const scale = 1 + 0.5*Math.sin(progress*Math.PI*3); 
-      octx.save();
-      octx.translate(overlay.width/2, overlay.height/2);
-      octx.scale(scale, scale*1.1);
-      octx.fillStyle = "red";
-      octx.fillText("YOU LOST!", 0,0);
-      octx.restore();
-    }
-
-    if(elapsed<duration) requestAnimationFrame(step);
-    else {
-      document.body.removeChild(overlay);
-      animationActive = false;
-      startGameBtn.disabled = false;
-    }
+  closeBtn.onclick = ()=>{
+    overlay.remove();
+    animationActive = false;
+    startGameBtn.disabled = false;
   };
-  requestAnimationFrame(step);
+}
+
+function runReplay(){
+  if(replayFrames.length===0) return;
+  replayMode = true;
+  replayIndex = 0;
+  animationActive = true;
+
+  function step(){
+    if(replayIndex>=replayFrames.length){
+      replayMode=false; animationActive=false; startGameBtn.disabled=false;
+      return;
+    }
+    const frame = replayFrames[replayIndex];
+    player = {...frame.player};
+    tokens = frame.tokens.map(t=>({...t}));
+    hazards = frame.hazards.map(h=>({...h}));
+    draw();
+    replayIndex++;
+    requestAnimationFrame(step);
+  }
+  step();
 }
 
 function gameLoop(timestamp){
@@ -936,8 +952,13 @@ function showCountdown(seconds, callback){
   document.body.appendChild(overlay);
   let count=seconds; overlay.textContent=count;
   const interval=setInterval(()=>{
-    count--; if(count>0) overlay.textContent=count;
-    else{ clearInterval(interval); document.body.removeChild(overlay); callback(); }
+    count--; 
+    if(count>0) overlay.textContent=count;
+    else{
+      clearInterval(interval); 
+      document.body.removeChild(overlay); 
+      callback();
+    }
   },1000);
 }
 
