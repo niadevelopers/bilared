@@ -1,4 +1,4 @@
-const CACHE_NAME = "bilared-cache-v2.1";
+const CACHE_NAME = "bilared-cache-v3";
 const urlsToCache = [
   "/",
   "/index.html",
@@ -11,36 +11,53 @@ const urlsToCache = [
   "/playerCount.js",
   "/notification.js",
   "/demo.js",
-  "/how-ToPlay.js",
   "/demo_mode.html",
-  "/images/cat.png",
-  "/images/cat-blue.png"
+  "/images/cat.png"
 ];
+
+async function forceCache(url, cache) {
+  let cached = false;
+  while (!cached) {
+    try {
+      await cache.add(url);
+      cached = true;
+      console.log(`[Service Worker] Cached: ${url}`);
+    } catch (err) {
+      console.warn(`[Service Worker] Retry caching ${url} due to error:`, err);
+      await new Promise(res => setTimeout(res, 500));
+    }
+  }
+}
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      for (const url of urlsToCache) {
+        await forceCache(url, cache);
+      }
+      console.log("[Service Worker] All files cached forcefully.");
+    })()
   );
-  
+
   self.skipWaiting();
 });
 
-
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
         cacheNames.map(name => {
           if (name !== CACHE_NAME) {
+            console.log(`[Service Worker] Deleting old cache: ${name}`);
             return caches.delete(name);
           }
         })
       );
-    })
+    })()
   );
-  
+
   self.clients.claim();
 });
 
