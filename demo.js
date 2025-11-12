@@ -1,10 +1,10 @@
-let gameRunning = false;
+let gameRunning = false; 
 let gamePaused = false;
 let player = { x: 0, y: 0, r: 10, color: "white", vx: 0, vy: 0 };
 let tokens = [];
 let hazards = [];
-let timer = 15;
-let totalTime = 15;
+let timer = 30;
+let totalTime = 30;
 let lastFrameTime = null;
 let tokenComboCount = 0;
 let floatingTexts = [];
@@ -47,11 +47,11 @@ function playHazardSound() {
 
 function playWinSound() {
     let startTime = audioCtx.currentTime;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 8; i++) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(300 + i * 40, startTime + i * 0.5);
+        osc.frequency.setValueAtTime(300 + i * 50, startTime + i * 0.5);
         gain.gain.setValueAtTime(0.12, startTime + i * 0.5);
         osc.connect(gain).connect(audioCtx.destination);
         osc.start(startTime + i * 0.5);
@@ -103,7 +103,14 @@ function setupGame() {
 
     tokens = [];
     for(let i=0;i<numTokens;i++){
-        tokens.push({ x: random(50, arena.width-50), y: random(50, arena.height-50), r: 8, collected:false });
+        tokens.push({ 
+            x: random(50, arena.width-50), 
+            y: random(50, arena.height-50), 
+            r: 8, 
+            collected:false,
+            dx: random(-0.7,0.7), 
+            dy: random(-0.7,0.7)
+        });
     }
 
     hazards = [];
@@ -113,7 +120,7 @@ function setupGame() {
         while(distance({x:hx,y:hy}, player) < 150);
         hazards.push({
             x: hx, y: hy, r: random(10,25), dx: random(-2,2), dy: random(-2,2),
-            baseSpeed:1.5, jitterTimer: random(30,120), chase:false, chaseTimer:0, chaseCooldown:0, glowPhase:0
+            baseSpeed:1.2, jitterTimer: random(30,120), chase:false, chaseTimer:0, chaseCooldown:0, glowPhase:0
         });
     }
 }
@@ -156,7 +163,14 @@ function draw(){
         ctx.beginPath(); ctx.arc(t.x,t.y,player.r*(i/15*0.5 + 0.5),0,Math.PI*2); ctx.fill();
     });
 
-    tokens.forEach(t=>{ if(!t.collected){ ctx.fillStyle="lime"; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill(); } });
+    tokens.forEach(t=>{ 
+        if(!t.collected){ 
+            ctx.fillStyle="lime"; 
+            ctx.beginPath(); 
+            ctx.arc(t.x,t.y,t.r,0,Math.PI*2); 
+            ctx.fill(); 
+        } 
+    });
 
     hazards.forEach(h=>{
         if(h.chase){
@@ -188,6 +202,19 @@ function update(){
 
     player.x = Math.max(player.r, Math.min(arena.width-player.r, player.x));
     player.y = Math.max(player.r, Math.min(arena.height-player.r, player.y));
+
+    tokens.forEach(t=>{
+        if(!t.collected){
+            t.x += t.dx;
+            t.y += t.dy;
+            if(t.x < t.r || t.x > arena.width - t.r) t.dx *= -1;
+            if(t.y < t.r || t.y > arena.height - t.r) t.dy *= -1;
+            t.dx += random(-0.05, 0.05);
+            t.dy += random(-0.05, 0.05);
+            const spd = Math.hypot(t.dx, t.dy);
+            if(spd > 1) { t.dx *= 1 / spd; t.dy *= 1 / spd; }
+        }
+    });
 
     hazards.forEach(h=>{
         const dist = distance(h,player);
