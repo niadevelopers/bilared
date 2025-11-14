@@ -123,7 +123,7 @@ function setupGame() {
         while(distance({x:hx,y:hy}, player) < 150);
         hazards.push({
             x: hx, y: hy, r: random(10,25), dx: random(-2,2), dy: random(-2,2),
-            baseSpeed:1.2, jitterTimer: random(30,120), chase:false, chaseTimer:0, chaseCooldown:0, glowPhase:0
+            baseSpeed:1.5, jitterTimer: random(30,120), chase:false, chaseTimer:0, chaseCooldown:0, glowPhase:0
         });
     }
 }
@@ -224,7 +224,7 @@ function update(){
         if(!h.chase && h.chaseCooldown<=0 && dist<150 && Math.random()<0.015){ h.chase=true; h.chaseTimer=120; }
         if(h.chase){
             const angle = Math.atan2(player.y-h.y, player.x-h.x);
-            const speed = h.baseSpeed*1.5; 
+            const speed = h.baseSpeed*1.7; 
             h.dx = Math.cos(angle)*speed; 
             h.dy = Math.sin(angle)*speed;
             h.chaseTimer--; 
