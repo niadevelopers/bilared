@@ -534,7 +534,7 @@ let timer = 15;
 let totalTime = 15;
 let dragActive = false;
 let touchStart = null;
-let baseSpeed = 1.5;
+let baseSpeed = 1.58;
 let safeZoneRadius = 150;
 let lastFrameTime = null;
 let tokenComboCount = 0;
@@ -628,9 +628,9 @@ function setupGame() {
   const isDesktop = !isMobile;
 
   if (isAndroid || isMobile) {
-    baseSpeed = 1.85; 
+    baseSpeed = 1.9; 
   } else if (isDesktop) {
-    baseSpeed = 1.45;
+    baseSpeed = 1.5;
   }
 
   let numHazards = (isAndroid || isMobile) ? 6 : 9;
@@ -767,7 +767,7 @@ function update() {
     if(!h.chase && h.chaseCooldown<=0 && dist<150 && Math.random()<0.015){ h.chase=true; h.chaseTimer=120; }
     if(h.chase){
       const angle=Math.atan2(player.y-h.y,player.x-h.x);
-      const speed=h.baseSpeed*1.8; h.dx=Math.cos(angle)*speed; h.dy=Math.sin(angle)*speed;
+      const speed=h.baseSpeed*1.9; h.dx=Math.cos(angle)*speed; h.dy=Math.sin(angle)*speed;
       h.chaseTimer--; if(h.chaseTimer<=0){ h.chase=false; h.chaseCooldown=random(60,180); }
     } else {
       h.jitterTimer--; if(h.jitterTimer<=0){ h.dx+=random(-0.5,0.5); h.dy+=random(-0.5,0.5); h.jitterTimer=random(30,120);}
@@ -999,3 +999,4 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
