@@ -918,8 +918,8 @@ arena.addEventListener("touchmove", (e)=>{
   const tx = t.clientX - rect.left;
   const ty = t.clientY - rect.top;
 
-  player.vx = (tx - player.x) * 0.5;
-  player.vy = (ty - player.y) * 0.5;
+  player.vx = (tx - player.x) * 0.35;
+  player.vy = (ty - player.y) * 0.35;
   player.x += player.vx;
   player.y += player.vy;
 
@@ -999,4 +999,5 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
 
