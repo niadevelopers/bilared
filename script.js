@@ -431,7 +431,7 @@ depositBtn.onclick = async () => {
 
   const amountInput = await prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
-  if (!amount || isNaN(amount) || amount < 100 || amount > 150000) return alert("Enter valid amount (100–150,000).");
+  if (!amount || isNaN(amount) || amount < 100 || amount > 150000) return alert("Oops! The amount entered is invalid. Kindly enter at least Ksh 100 to proceed.");
 
   const email = await prompt("Enter your email:");
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email.");
@@ -981,6 +981,7 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
 
 
 
