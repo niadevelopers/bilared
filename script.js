@@ -425,56 +425,38 @@ async function loadWallet() {
 setInterval(loadWallet, 10000);
 loadWallet();
 
+
 depositBtn.onclick = async () => {
-  if (!token) {
-    alert("Please log in to continue.");
-    return;
-  }
+  if (!token) return alert("Please log in.");
 
   const amountInput = await prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
+  if (!amount || isNaN(amount) || amount < 1 || amount > 150000) return alert("Enter valid amount (100–150,000).");
 
-  if (!amountInput || isNaN(amount)) return alert("Please enter a valid numeric amount.");
-  if (amount < 100) return alert("Minimum deposit is KSh 100. Please enter KSh 100 or more.");
-  if (amount > 150000) return alert("Maximum deposit limit is KSh 150,000. Please enter a smaller amount.");
-
-  const payerEmail = await prompt("Enter your email for this deposit:");
-  if (!payerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) return alert("Please enter a valid email address.");
+  const email = await prompt("Enter your email:");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email.");
 
   showLoader();
   try {
-    const res = await fetch(`${API_BASE}/paystack/initiate`, {
+    const res = await fetch(`${API_BASE}/pesapal/initiate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ amount, email: payerEmail }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ amount, email }),
     });
-
     const data = await res.json();
+    if (!data.checkoutUrl) return alert("Payment initiation failed.");
 
-    if (!data.status) return alert(`Payment initialization failed: ${data.message}`);
+    window.open(data.checkoutUrl, "_blank");
 
-    const handler = PaystackPop.setup({
-      key: "pk_live_8b79c89f1bc7cd80a6b24d0d18bd580f49e9c646",
-      email: payerEmail,
-      amount: Math.round(amount * 100),
-      currency: "KES",
-      reference: data.data.reference,
-      callback: function () {
-        alert("Deposit successful! Your wallet will update shortly.");
-        setTimeout(loadWallet, 2000);
-      },
-      onClose: function () {
-        alert("Deposit window closed. No transaction was made.");
-      },
-    });
+    const checkWallet = setInterval(async () => {
+      await loadWallet();
+    }, 5000);
+    setTimeout(() => clearInterval(checkWallet), 60000);
 
-    handler.openIframe();
+    alert("Checkout opened. Complete payment in new tab.");
   } catch (err) {
-    console.error("Deposit error:", err);
-    alert("Failed to initialize deposit. Please check your connection or try again later.");
+    console.error(err);
+    alert("Failed to initiate deposit.");
   } finally {
     hideLoader();
   }
@@ -999,5 +981,6 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
 
 
