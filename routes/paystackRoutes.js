@@ -2,25 +2,24 @@ import express from "express";
 import axios from "axios";
 import Payment from "../models/Payment.js";
 import User from "../models/User.js";
+// Mongoose is imported but session logic is removed to avoid Replica Set error.
+import mongoose from "mongoose"; 
 
 const router = express.Router();
 
-const PESAPAL_BASE_URL = process.env.PESAPAL_BASE_URL || "https://cybqa.pesapal.com/pesapalv3"; 
+const PESAPAL_BASE_URL = process.env.PESAPAL_BASE_URL || "https://cybqa.pesapal.com/pesapalv3";
 const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-const CALLBACK_URL = `${process.env.BASE_URL}/api/pesapal/callback`;
-const IPN_URL = `${process.env.BASE_URL}/api/pesapal/ipn`;
+const BASE_URL = process.env.BASE_URL; 
+const CALLBACK_URL = `${BASE_URL}/api/pesapal/callback`;
+const IPN_URL = `${BASE_URL}/api/pesapal/ipn`; 
 
 let pesapalToken = {
     token: null,
     expiry: 0,
 };
 
-/**
- * Step 1: Request an OAuth 2.0 Bearer Token
- * This function fetches a new token if the current one is expired.
- * @returns {string} The active Bearer token.
- */
+
 async function getPesapalToken() {
     const now = Date.now() / 1000;
 
@@ -46,7 +45,6 @@ async function getPesapalToken() {
         pesapalToken.token = token;
         pesapalToken.expiry = new Date(expiryDate).getTime() / 1000;
 
-        console.log("New PesaPal token fetched successfully.");
         return token;
     } catch (error) {
         console.error("Failed to fetch PesaPal OAuth 2.0 Token:", error.response?.data || error.message);
@@ -61,9 +59,12 @@ router.post("/initiate", async (req, res) => {
         if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
             return res.status(400).json({ message: "Valid amount required" });
         }
-        if (!email || !email.includes("@")) {
-            return res.status(400).json({ message: "Valid email required" });
+        
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
         }
+
 
         const token = await getPesapalToken();
         const merchantReference = `PESA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -74,13 +75,13 @@ router.post("/initiate", async (req, res) => {
             amount: parseFloat(amount),
             description: `Deposit for ${email}`,
             callback_url: CALLBACK_URL,
-            notification_id: process.env.PESAPAL_IPN_ID,
+            notification_id: process.env.PESAPAL_IPN_ID, 
             branch: "0",
             billing_address: {
                 email_address: email,
                 phone_number: phoneNumber,
-                first_name: firstName,
-                last_name: lastName,
+                first_name: user.firstName || firstName,
+                last_name: user.lastName || lastName,
                 country: "KE",
             },
         };
@@ -104,13 +105,14 @@ router.post("/initiate", async (req, res) => {
             console.error("Pesapal API error - Missing redirect URL:", pesapalRes.data);
             return res.status(500).json({ message: "Failed to get PesaPal checkout URL" });
         }
-
+        
         await Payment.create({
             providerRef: merchantReference,
             trackingId: order_tracking_id, 
             amount: parseFloat(amount),
             status: "pending",
             email,
+            userId: user._id, 
         });
 
         res.json({ checkoutUrl: redirect_url });
@@ -124,11 +126,13 @@ router.post("/initiate", async (req, res) => {
     }
 });
 
-
 router.get("/callback", async (req, res) => {
     const { OrderTrackingId } = req.query;
 
-   
+    if (OrderTrackingId) {
+        await checkAndUpdateStatus(OrderTrackingId);
+    }
+
     res.send(`
         <html>
         <head>
@@ -140,22 +144,36 @@ router.get("/callback", async (req, res) => {
                 <h1 style="color: #10b981;">Payment Processed</h1>
                 <p><strong>Tracking ID:</strong> ${OrderTrackingId || "N/A"}</p>
                 <p style="color: #374151;">We have received notification of your payment transaction.</p>
-                <p style="font-size: 0.9em; color: #6b7280;">Your wallet will be updated shortly after the payment is verified (via our secure Webhook/IPN).</p>
+                <p style="font-size: 0.9em; color: #6b7280;">Your wallet will be updated shortly after verification.</p>
                 <button onclick="window.close()" style="margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background-color: #3b82f6; color: white; cursor: pointer;">Close Window</button>
             </div>
         </body>
         </html>
     `);
-
- 
 });
 
+router.get("/ipn", async (req, res) => {
+    const { OrderTrackingId } = req.query;
+
+    if (!OrderTrackingId) {
+        return res.status(400).send("Invalid request: Missing OrderTrackingId");
+    }
+    
+    await checkAndUpdateStatus(OrderTrackingId);
+
+    res.status(200).send(OrderTrackingId); 
+});
+
+
 /**
- * Helper function to check transaction status and update database.
+ * Helper function to check transaction status and update database (Non-Atomic).
+ * NOTE: This is a fast solution that removes MongoDB transaction safety.
+ * This also checks for 'Completed' or 'Success' in the status string.
  * @param {string} trackingId PesaPal's Order Tracking ID.
  */
 async function checkAndUpdateStatus(trackingId) {
     if (!trackingId) return;
+
 
     try {
         const token = await getPesapalToken();
@@ -169,54 +187,60 @@ async function checkAndUpdateStatus(trackingId) {
             },
             timeout: 10000,
         });
+        
+        const { payment_status_description, merchant_reference } = statusRes.data;
+        
+        const payment_status = payment_status_description; 
+        
+        if (!payment_status || typeof payment_status !== 'string') {
+            return console.warn(`PesaPal Status Check failed: Invalid or missing status. Data:`, statusRes.data);
+        }
 
-        const { payment_status, merchant_reference } = statusRes.data;
         const normalizedStatus = payment_status.toUpperCase();
         
-        console.log(`PesaPal Status Check (${trackingId}):`, normalizedStatus);
         
-        const payment = await Payment.findOne({ providerRef: merchant_reference });
-        if (!payment) return console.warn(`Payment record not found for reference: ${merchant_reference}`);
+        const payment = await Payment.findOne({ 
+            providerRef: merchant_reference, 
+            status: { $ne: 'success' } 
+        }); 
         
-        if (normalizedStatus === "COMPLETED" && payment.status !== "success") {
-            const user = await User.findOne({ email: payment.email });
+        if (!payment) {
+            return console.warn(`Payment record not found or already processed for reference: ${merchant_reference}`);
+        }
+        
+
+        if (normalizedStatus.includes("COMPLETED") || normalizedStatus.includes("SUCCESS")) {
+            const user = await User.findOne({ email: payment.email }); 
+            
             if (user) {
-                user.wallet.balance += payment.amount;
-                user.wallet.available += payment.amount;
-                await user.save();
-                console.log(`User ${user.email} wallet updated with ${payment.amount}`);
+                const amountToAdd = parseFloat(payment.amount);
+
+                user.wallet.balance += amountToAdd;
+                user.wallet.available += amountToAdd; 
+                await user.save(); 
+                
+
+                payment.status = "success";
+                payment.pesapalTrackingId = trackingId; 
+                payment.completionDate = new Date();
+                await payment.save(); 
+                
+            } else {
+                console.error(`User not found for email: ${payment.email}. Cannot update wallet.`);
+                payment.status = "review_user_missing"; 
+                await payment.save();
             }
 
-            payment.status = "success";
-            payment.pesapalTrackingId = trackingId; 
-            payment.completionDate = new Date();
-            await payment.save();
-            
-            console.log(`Payment ${payment.providerRef} marked as success.`);
-
-        } else if (normalizedStatus === "FAILED" || normalizedStatus === "CANCELLED") {
+        } else if (normalizedStatus.includes("FAILED") || normalizedStatus.includes("CANCELLED") || normalizedStatus.includes("REVERSED")) {
             payment.status = normalizedStatus.toLowerCase();
             await payment.save();
-            console.log(`Payment ${payment.providerRef} marked as ${payment.status}.`);
+
         }
 
     } catch (err) {
-        console.error("Pesapal status check error:", err.response?.data || err.message);
+        console.error("Pesapal status check/update error:", err.response?.data || err.message);
     }
 }
 
-
-router.get("/ipn", async (req, res) => {
-    const { OrderTrackingId, Status, MerchantReference } = req.query;
-
-    if (!OrderTrackingId) {
-        return res.status(400).send("Invalid request: Missing OrderTrackingId");
-    }
-
-    await checkAndUpdateStatus(OrderTrackingId);
-
-    
-    res.status(200).send(OrderTrackingId);
-});
 
 export default router;
