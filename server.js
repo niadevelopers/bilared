@@ -32,7 +32,7 @@ if (cluster.isPrimary) {
   const app = express();
 
   app.post(
-    "/api/paystack/webhook",
+    "/api/pesapal/webhook",
     express.raw({ type: "*/*" }),
     (req, res, next) => {
       req.rawBody = req.body;
@@ -53,7 +53,7 @@ if (cluster.isPrimary) {
   });
 
   app.use("/api/auth", authRoutes);
-  app.use("/api/paystack", paystackRoutes);
+  app.use("/api/pesapal", paystackRoutes);
   app.use("/api/wallet", walletRoutes);
   app.use("/api/game", gameRoutes);
   app.use("/api/admin", adminRoutes);
@@ -66,3 +66,4 @@ if (cluster.isPrimary) {
   app.listen(PORT, () => {
   });
 }
+
