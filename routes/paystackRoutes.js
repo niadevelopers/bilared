@@ -202,84 +202,87 @@ router.get("/callback", async (req, res) => {
     `);
 });
 
-// ────────────────────────────────────────────────
-//  POST /ipn  → Webhook from PesaFlux (real-time success/failure)
-//  Always respond 200 quickly
-// ────────────────────────────────────────────────
+
+
 router.post("/ipn", async (req, res) => {
     try {
-        const payload = req.body;
-        console.log("PesaFlux webhook:", payload);
+        const payload = req.body || {};
 
-        if (!payload || typeof payload !== 'object') {
-            return res.status(200).json({ received: true });
-        }
+        // HEAVY LOGGING - paste these logs after next test
+        console.log("[WEBHOOK FULL PAYLOAD]", JSON.stringify(payload, null, 2));
+        console.log("[WEBHOOK KEYS]", Object.keys(payload));
 
-        // Common fields from similar aggregators (adjust if your actual payload differs)
-        const responseCode = payload.ResponseCode ?? payload.ResultCode;
-        const reference = payload.reference || payload.MerchantRequestID || payload.CheckoutRequestID;
-        const transactionId = payload.TransactionID || payload.CheckoutRequestID;
-        const amountStr = payload.TransactionAmount || payload.amount;
-        const statusDesc = payload.ResponseDescription || payload.ResultDesc || payload.TransactionStatus || "";
+        // Extract reference - try multiple possible names from similar APIs
+        const reference = 
+            payload.reference ||
+            payload.TransactionReference ||
+            payload.MerchantRequestID ||
+            payload.CheckoutRequestID ||
+            null;
+
+        console.log("[WEBHOOK] Detected reference:", reference);
 
         if (!reference) {
-            console.warn("Webhook missing reference");
+            console.warn("[WEBHOOK] No reference found in payload");
             return res.status(200).json({ received: true });
         }
 
-        const payment = await Payment.findOne({ 
-            providerRef: reference, 
-            status: { $ne: 'success' } 
+        // Find the pending payment using the stored reference
+        const payment = await Payment.findOne({
+            providerRef: reference,
+            status: { $ne: "success" }
         });
 
         if (!payment) {
-            console.log(`No pending payment found for ref: ${reference}`);
+            console.warn(`[WEBHOOK] No matching pending payment for reference: ${reference}`);
             return res.status(200).json({ received: true });
         }
 
-        // Update tracking ID if available
-        if (transactionId && payment.trackingId === payment.providerRef) {
-            payment.trackingId = transactionId;
-        }
+        console.log(`[WEBHOOK] Matched payment → user email in waiting: ${payment.email}, amount: ${payment.amount}`);
 
-        const isSuccess = responseCode === 0 || 
-                         statusDesc.toLowerCase().includes("success") || 
-                         statusDesc.toLowerCase().includes("completed");
+        // Status check
+        const responseCode = payload.ResponseCode ?? payload.ResultCode ?? -1;
+        const desc = (payload.ResponseDescription || payload.ResultDesc || "").toLowerCase();
+
+        const isSuccess = responseCode === 0 || desc.includes("success") || desc.includes("accepted");
 
         if (isSuccess) {
+            // Use the "waiting" email stored in Payment
             const user = await User.findOne({ email: payment.email });
-            
+
             if (user) {
-                const amountToAdd = parseFloat(amountStr) || payment.amount;
+                const amountToAdd = parseFloat(payload.TransactionAmount || payload.amount) || payment.amount;
 
                 user.wallet.balance += amountToAdd;
-                user.wallet.available += amountToAdd; 
+                user.wallet.available += amountToAdd;
                 await user.save();
 
                 payment.status = "success";
                 payment.completionDate = new Date();
+                payment.finalAmount = amountToAdd; // optional
                 await payment.save();
 
-                console.log(`Success: Wallet +${amountToAdd} KES for ${payment.email}`);
+                console.log(`[WEBHOOK SUCCESS] Wallet updated +${amountToAdd} KES for user: ${payment.email}`);
             } else {
-                payment.status = "review_user_missing";
+                payment.status = "failed_user_not_found";
                 await payment.save();
-                console.error(`User not found: ${payment.email}`);
+                console.error(`[WEBHOOK] User not found for email: ${payment.email}`);
             }
         } else {
-            // Failed / cancelled / timed out
             payment.status = "failed";
+            payment.failureReason = desc || "Unknown failure";
             await payment.save();
-            console.log(`Payment failed for ref: ${reference} — ${statusDesc}`);
+            console.log(`[WEBHOOK] Transaction failed: ${desc}`);
         }
 
         res.status(200).json({ received: true });
 
     } catch (err) {
-        console.error("Webhook error:", err);
-        res.status(200).json({ received: true }); // never block retries
+        console.error("[WEBHOOK CRASH]", err.message, err.stack);
+        res.status(200).json({ received: true });
     }
 });
+
 
 // Optional helper (can be called from frontend polling if you want real-time status without relying 100% on webhook)
 async function checkAndUpdateStatus(reference) {
@@ -325,5 +328,6 @@ async function checkAndUpdateStatus(reference) {
 }
 
 export default router;
+
 
 
