@@ -12,6 +12,7 @@ const BASE_URL = process.env.BASE_URL;
 const CALLBACK_URL = `${BASE_URL}/api/pesapal/callback`;   // kept but minimally used
 const WEBHOOK_URL = `${BASE_URL}/api/pesapal/ipn`;         // set this in PesaFlux dashboard
 
+
 // ────────────────────────────────────────────────
 //  POST /initiate
 //  Triggers STK Push → no redirect
@@ -45,13 +46,33 @@ router.post("/initiate", async (req, res) => {
             msisdn = '254' + msisdn;  // fallback, but regex should prevent invalid
         }
 
+        // ─── IMPORTANT CHANGE ───────────────────────────────────────────────
+        // Use MERCHANT email for PesaFlux API call
+        // User email is kept only for internal wallet update
+        const merchantEmail = process.env.PESAFUX_MERCHANT_EMAIL;
+
+        if (!merchantEmail) {
+            console.error("PESAFUX_MERCHANT_EMAIL is not set in environment variables");
+            return res.status(500).json({ 
+                message: "Server configuration error - payment gateway not properly set up" 
+            });
+        }
+
         const payload = {
             api_key: PESAFUX_API_KEY,
-            email: email,
+            email: merchantEmail,                    // ← FIXED: PesaFlux registered email
             amount: parseFloat(amount),
             msisdn: msisdn,
-            reference: reference,   // helps match webhook
+            reference: reference,                    // your internal reference
         };
+
+        // Optional: log what is actually sent (without exposing api_key)
+        console.log("PesaFlux STK payload:", { 
+            email: merchantEmail, 
+            amount: amount, 
+            msisdn, 
+            reference 
+        });
 
         const response = await axios.post(
             `${PESAFUX_BASE_URL}/v1/initiatestk`,
@@ -68,18 +89,19 @@ router.post("/initiate", async (req, res) => {
             console.error("PesaFlux STK initiation failed:", data);
             return res.status(400).json({ 
                 message: "Failed to send M-Pesa prompt", 
-                detail: data.ResultDesc || data.ResponseDescription || "Unknown error" 
+                detail: data.ResultDesc || data.ResponseDescription || data.message || "Unknown error" 
             });
         }
 
         const trackingId = data.TransactionID || data.CheckoutRequestID || reference;
 
+        // Store the USER'S email in the Payment record (for wallet update later)
         await Payment.create({
             providerRef: reference,
             trackingId: trackingId,
             amount: parseFloat(amount),
             status: "pending",
-            email,
+            email: email,                    // ← User's email → used for findByEmail wallet update
             userId: user._id,
             phone: msisdn,
         });
@@ -96,12 +118,15 @@ router.post("/initiate", async (req, res) => {
         console.error("PesaFlux initiate error:", err.response?.data || err.message || err);
         res.status(500).json({ 
             message: "Error initializing payment", 
-            detail: err.response?.data?.ResultDesc || err.response?.data?.ResponseDescription || err.message 
+            detail: err.response?.data?.ResultDesc || 
+                    err.response?.data?.ResponseDescription || 
+                    err.response?.data?.message || 
+                    err.message 
         });
     }
 });
 
-// ────────────────────────────────────────────────
+
 //  GET /callback
 //  Minimal page → auto-reload homepage on success flow
 //  (shows briefly if user is redirected here, then refreshes main window)
@@ -263,3 +288,4 @@ async function checkAndUpdateStatus(reference) {
 }
 
 export default router;
+
