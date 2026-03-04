@@ -432,7 +432,7 @@ depositBtn.onclick = async () => {
   // Step 1: Amount
   const amountInput = await prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
-  if (!amount || isNaN(amount) || amount < 100 || amount > 150000) {
+  if (!amount || isNaN(amount) || amount < 1 || amount > 150000) {
     return alert("Invalid amount. Please enter between Ksh 100 and Ksh 150,000.");
   }
 
@@ -1024,6 +1024,7 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
 
 
 
