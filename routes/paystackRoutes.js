@@ -20,58 +20,62 @@ const WEBHOOK_URL = `${BASE_URL}/api/pesapal/ipn`;         // set this in PesaFl
 router.post("/initiate", async (req, res) => {
     try {
         const { amount, email, phoneNumber, firstName = "User", lastName = "Unknown" } = req.body;
-        
+
+        // ─── Input validation ───────────────────────────────────────────────
         if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-            return res.status(400).json({ message: "Valid amount required" });
+            return res.status(400).json({ message: "Valid amount required (greater than 0)" });
         }
-        
+
         if (!phoneNumber || !/^(\+?254|0)[17]\d{8}$/.test(phoneNumber)) {
-            return res.status(400).json({ 
-                message: "Valid Kenyan phone number required. Supported formats: +2547xxxxxxxx, 2547xxxxxxxx, 07xxxxxxxx, +2541xxxxxxxx, 2541xxxxxxxx, 01xxxxxxxx (for newer prefixes starting with 1 or 7)" 
+            return res.status(400).json({
+                message: "Valid Kenyan phone number required. Supported formats: +2547xxxxxxxx, 2547xxxxxxxx, 07xxxxxxxx, +2541xxxxxxxx, 2541xxxxxxxx, 01xxxxxxxx"
             });
         }
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ message: "User not found with this email" });
         }
 
-        const reference = `PESA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        // Generate unique reference
+        const reference = `PESA-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 
-        // Standardize to 254xxxxxxxxx (full international format without +)
-        let msisdn = phoneNumber.replace(/^\+/, '').replace(/\s/g, '');
+        // Normalize phone to international format: 2547xxxxxxxx or 2541xxxxxxxx
+        let msisdn = phoneNumber
+            .replace(/^\+/, '')
+            .replace(/\s/g, '')
+            .replace(/-/g, '');
+
         if (msisdn.startsWith('0')) {
             msisdn = '254' + msisdn.slice(1);
         } else if (!msisdn.startsWith('254')) {
-            msisdn = '254' + msisdn;  // fallback, but regex should prevent invalid
+            msisdn = '254' + msisdn;
         }
 
-        // ─── IMPORTANT CHANGE ───────────────────────────────────────────────
-        // Use MERCHANT email for PesaFlux API call
-        // User email is kept only for internal wallet update
+        // ─── Use MERCHANT email for PesaFlux (not the user's email) ────────
         const merchantEmail = process.env.PESAFUX_MERCHANT_EMAIL;
 
         if (!merchantEmail) {
-            console.error("PESAFUX_MERCHANT_EMAIL is not set in environment variables");
-            return res.status(500).json({ 
-                message: "Server configuration error - payment gateway not properly set up" 
+            console.error("Critical: PESAFUX_MERCHANT_EMAIL is not set in environment variables");
+            return res.status(500).json({
+                message: "Payment gateway configuration error. Please contact support."
             });
         }
 
         const payload = {
             api_key: PESAFUX_API_KEY,
-            email: merchantEmail,                    // ← FIXED: PesaFlux registered email
+            email: merchantEmail,                    // ← PesaFlux registered merchant email
             amount: parseFloat(amount),
             msisdn: msisdn,
-            reference: reference,                    // your internal reference
+            reference: reference
         };
 
-        // Optional: log what is actually sent (without exposing api_key)
-        console.log("PesaFlux STK payload:", { 
-            email: merchantEmail, 
-            amount: amount, 
-            msisdn, 
-            reference 
+        // Debug log (safe – api_key hidden)
+        console.log("[PesaFlux STK Request]", {
+            merchantEmail,
+            amount: payload.amount,
+            msisdn,
+            reference
         });
 
         const response = await axios.post(
@@ -85,43 +89,76 @@ router.post("/initiate", async (req, res) => {
 
         const data = response.data;
 
-        if (data.ResultCode !== "200" && data.ResultCode !== 0 && data.ResponseCode !== 0) {
-            console.error("PesaFlux STK initiation failed:", data);
-            return res.status(400).json({ 
-                message: "Failed to send M-Pesa prompt", 
-                detail: data.ResultDesc || data.ResponseDescription || data.message || "Unknown error" 
+        // ─── Improved success detection ────────────────────────────────────
+        const responseCode = data.ResponseCode ?? data.ResultCode ?? null;
+        const description = (data.ResultDesc || data.ResponseDescription || data.message || "").toLowerCase();
+
+        const isSuccess =
+            responseCode === 0 ||
+            responseCode === "200" ||
+            description.includes("enter your mpesa pin") ||
+            description.includes("request accepted") ||
+            description.includes("successfully") ||
+            description.includes("processing") ||
+            description.includes("prompt sent");
+
+        if (!isSuccess) {
+            console.error("[PesaFlux STK FAILED]", data);
+            return res.status(400).json({
+                message: "Failed to send M-Pesa prompt",
+                detail: description || "Unknown gateway error",
+                fullResponse: data // helpful for debugging (remove in production if sensitive)
             });
         }
 
-        const trackingId = data.TransactionID || data.CheckoutRequestID || reference;
+        // Success – extract best available tracking/reference ID
+        const trackingId =
+            data.TransactionID ||
+            data.CheckoutRequestID ||
+            data.MerchantRequestID ||
+            data.TransactionReference ||
+            reference;
 
-        // Store the USER'S email in the Payment record (for wallet update later)
+        // Store USER email in Payment record (for wallet lookup later)
         await Payment.create({
             providerRef: reference,
-            trackingId: trackingId,
+            trackingId,
             amount: parseFloat(amount),
             status: "pending",
-            email: email,                    // ← User's email → used for findByEmail wallet update
+            email,                               // ← user's email
             userId: user._id,
             phone: msisdn,
+            initiatedAt: new Date()
         });
 
-        res.json({ 
+        // ─── Response to frontend ──────────────────────────────────────────
+        res.json({
             success: true,
-            message: "M-Pesa prompt sent — check your phone and enter PIN",
+            message: "M-Pesa prompt sent successfully — check your phone and enter PIN",
             reference,
             trackingId,
-            checkoutUrl: null   // no redirect
+            checkoutUrl: null,
+            amount: parseFloat(amount)
         });
 
     } catch (err) {
-        console.error("PesaFlux initiate error:", err.response?.data || err.message || err);
-        res.status(500).json({ 
-            message: "Error initializing payment", 
-            detail: err.response?.data?.ResultDesc || 
-                    err.response?.data?.ResponseDescription || 
-                    err.response?.data?.message || 
-                    err.message 
+        console.error("[PesaFlux initiate error]", {
+            message: err.message,
+            response: err.response?.data,
+            status: err.response?.status
+        });
+
+        const detail =
+            err.response?.data?.ResultDesc ||
+            err.response?.data?.ResponseDescription ||
+            err.response?.data?.message ||
+            err.response?.data?.error ||
+            err.message ||
+            "Internal server error";
+
+        res.status(500).json({
+            message: "Error initializing payment",
+            detail
         });
     }
 });
@@ -288,4 +325,5 @@ async function checkAndUpdateStatus(reference) {
 }
 
 export default router;
+
 
