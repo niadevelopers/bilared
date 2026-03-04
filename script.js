@@ -427,36 +427,79 @@ loadWallet();
 
 
 depositBtn.onclick = async () => {
-  if (!token) return alert("Please log in.");
+  if (!token) return alert("Please log in first.");
 
+  // Step 1: Amount
   const amountInput = await prompt("Enter deposit amount (KES):");
   const amount = parseFloat(amountInput);
-  if (!amount || isNaN(amount) || amount < 100 || amount > 150000) return alert("Oops! The amount entered is invalid. Kindly enter at least Ksh 100 to proceed.");
+  if (!amount || isNaN(amount) || amount < 100 || amount > 150000) {
+    return alert("Invalid amount. Please enter between Ksh 100 and Ksh 150,000.");
+  }
 
-  const email = await prompt("Enter your email:");
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email.");
+  // Step 2: Email (still required for user lookup on backend)
+  const email = await prompt("Enter your registered email:");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return alert("Please enter a valid email address.");
+  }
+
+  // Step 3: Phone number (NEW - required for M-Pesa STK Push)
+  const phoneInput = await prompt("Enter your M-Pesa phone number (e.g. 0712345678 or +254712345678):");
+  if (!phoneInput) return alert("Phone number is required to receive the M-Pesa prompt.");
+
+  // Basic frontend validation (backend has stricter regex too)
+  const cleanedPhone = phoneInput.replace(/\s/g, '').replace(/-/g, '');
+  if (!/^(\+?254|0)[17]\d{8}$/.test(cleanedPhone)) {
+    return alert(
+      "Invalid phone number format.\n\nSupported formats:\n• 0712345678\n• +254712345678\n• 254712345678\n(Use 07xx or 01xx prefixes for Kenyan Safaricom/Airtel lines)"
+    );
+  }
 
   showLoader();
+
   try {
     const res = await fetch(`${API_BASE}/pesapal/initiate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ amount, email }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        amount,
+        email,
+        phoneNumber: cleanedPhone,   // ← Sent to backend
+      }),
     });
+
     const data = await res.json();
-    if (!data.checkoutUrl) return alert("Payment initiation failed.");
 
-    window.open(data.checkoutUrl, "_blank");
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Payment initiation failed.");
+    }
 
+    // Success: STK Push sent → no redirect needed
+    alert(
+      "M-Pesa prompt sent successfully!\n\n" +
+      "→ Check your phone for the payment request from Safaricom.\n" +
+      "→ Enter your PIN to complete.\n\n" +
+      "Your wallet will update automatically once confirmed.\n\n" +
+      `(Reference: ${data.reference || "processing..."})`
+    );
+
+    // Start polling wallet balance to reflect update quickly
     const checkWallet = setInterval(async () => {
-      await loadWallet();
-    }, 5000);
-    setTimeout(() => clearInterval(checkWallet), 60000);
+      await loadWallet();  // your existing function to refresh balance UI
+    }, 4000);  // every 4 seconds
 
-    alert("Checkout opened. Complete payment in new tab.");
+    // Stop polling after ~90 seconds (adjust as needed)
+    setTimeout(() => clearInterval(checkWallet), 90000);
+
   } catch (err) {
-    console.error(err);
-    alert("Failed to initiate deposit.");
+    console.error("Deposit initiation error:", err);
+    alert(
+      err.message.includes("phone")
+        ? "Failed to send prompt. Check phone number and try again."
+        : "Failed to initiate deposit. Please try again or contact support."
+    );
   } finally {
     hideLoader();
   }
@@ -981,6 +1024,7 @@ async function endGame(result){
 }
 
 startGameBtn.onclick=startGame;
+
 
 
 
