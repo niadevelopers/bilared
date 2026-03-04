@@ -163,46 +163,56 @@ router.post("/initiate", async (req, res) => {
     }
 });
 
-
-//  GET /callback
-//  Minimal page → auto-reload homepage on success flow
-//  (shows briefly if user is redirected here, then refreshes main window)
-// ────────────────────────────────────────────────
+// GET /callback - Fallback page (rarely used in pure STK Push)
 router.get("/callback", async (req, res) => {
-    const { reference, trackingId } = req.query;
+    const { reference, trackingId, status } = req.query; // allow optional ?status=success/fail for manual calls
 
-    // Optional: could query status, but webhook should have handled it
+    let title = "Payment Status";
+    let message = "We have received your payment notification.";
+    let color = "#10b981"; // green
+
+    if (status === "failed") {
+        title = "Payment Issue";
+        message = "There was a problem processing your payment. Please check your phone or try again.";
+        color = "#ef4444"; // red
+    }
 
     res.send(`
         <html>
         <head>
-            <title>Payment Received</title>
+            <title>${title}</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script>
-                // Try to refresh opener (if popup) or self, then close
                 setTimeout(() => {
                     if (window.opener && !window.opener.closed) {
-                        window.opener.location.reload();    // refresh homepage
+                        window.opener.location.reload(true); // force reload homepage
+                        setTimeout(() => window.close(), 500);
                     } else {
-                        window.location.reload();           // or refresh self if same tab
+                        // No opener → refresh self or show message
+                        document.getElementById('status').innerHTML = 
+                            '<p style="color:#10b981;">Payment processed! Refresh your main page to see updated balance.</p>' +
+                            '<button onclick="window.location.reload()">Refresh Now</button>';
                     }
-                    setTimeout(() => window.close(), 800); // close this tab/window
-                }, 3000); // give 3 seconds to read message
+                }, 3500); // slightly longer delay for readability
             </script>
         </head>
-        <body style="font-family:sans-serif; text-align:center; padding:50px; background-color: #f4f7f6;">
-            <div style="max-width:400px; margin:0 auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background-color: white;">
-                <h1 style="color: #10b981;">Payment Received!</h1>
-                <p style="color: #374151;">Your wallet is being updated...</p>
-                <p style="font-size: 0.9em; color: #6b7280;">Reference: ${reference || trackingId || "N/A"}<br>Refreshing homepage shortly...</p>
-                <button onclick="window.close()" style="margin-top: 20px; padding: 10px 20px; border: none; border-radius: 6px; background-color: #3b82f6; color: white; cursor: pointer;">Close</button>
+        <body style="font-family:sans-serif; text-align:center; padding:60px; background-color:#f9fafb;">
+            <div style="max-width:420px; margin:0 auto; padding:30px; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,0.12); background:white;">
+                <h1 style="color:${color};">${title}</h1>
+                <p style="color:#374151; font-size:1.1em;">${message}</p>
+                <p style="font-size:0.95em; color:#6b7280; margin:20px 0;">
+                    Reference: ${reference || trackingId || "N/A"}<br>
+                    Your wallet should update shortly — you can close this window.
+                </p>
+                <div id="status"></div>
+                <button onclick="window.close()" style="margin-top:24px; padding:12px 28px; border:none; border-radius:8px; background:#3b82f6; color:white; font-weight:bold; cursor:pointer;">
+                    Close Window
+                </button>
             </div>
         </body>
         </html>
     `);
 });
-
-
 
 router.post("/ipn", async (req, res) => {
     try {
@@ -328,6 +338,7 @@ async function checkAndUpdateStatus(reference) {
 }
 
 export default router;
+
 
 
 
